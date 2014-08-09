@@ -1,0 +1,28 @@
+{
+    "common": {
+        "name":                     "legacy",
+        "version":                  "0.0.0",
+        "title":                    "Legacy Web Adapter",
+        "desc":                     "provides a CCU.IO-compatible Webserver",
+        "platform":                 "Javascript/Node.js",
+        "depends": [
+            "www"
+        ],
+        "mode":                     "daemon",
+        "loglevel":                 "info"
+    },
+    "native": {
+        "ioListenPort":             8088,
+        "ioListenPortSsl":          null,
+        "authentication":  {
+            "enabled":              false,
+            "enabledSsl":           false,
+            "user":                 "admin",
+            "password":             "iobroker"
+        },
+        "useCache":                 false
+    },
+    "objects": [
+
+    ]
+}
