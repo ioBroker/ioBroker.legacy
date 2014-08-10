@@ -118,7 +118,19 @@ function main() {
 
 
 function setState(id, val, ts, ack, callback) {
-    adapter.setState(id, {
+
+    if (objects[id] && objects[id].common) {
+        console.log(objects[id].common.type, typeof val, JSON.stringify(val));
+        if (objects[id].common.type === 'boolean' && typeof val === 'number') val = val > 0 ? true : false;
+        if (objects[id].common.type === 'boolean' && typeof val === 'string') val = (val !== 'false') ? true : false;
+        if (objects[id].common.type === 'number' && typeof val === 'string') val = parseFloat(val);
+        if (objects[id].common.type === 'number' && typeof val === 'boolean') val = val ? 1 : 0;
+    }
+
+    console.log('setState ' + id + ' val=' + JSON.stringify(val) + ' ts=' + ts + ' ack=' + ack);
+
+
+    adapter.setForeignState(id, {
         val: val,
         ts: ts,
         ack: ack
@@ -181,36 +193,7 @@ function uploadParser(req, res, next) {
 }
 
 function findDatapoint(needle, hssdp) {
-    if (!datapoints[needle]) {
-        if (regaIndex.Name[needle]) {
-            // Get by Name
-            needle = regaIndex.Name[needle][0];
-            if (hssdp) {
-                // Get by Name and Datapoint
-                if (regaObjects[needle].DPs) {
-                    return regaObjects[needle].DPs[hssdp];
-                } else {
-                    return false;
-                }
-            }
-        } else if (regaIndex.Address[needle]) {
-            needle = regaIndex.Address[needle][0];
-            if (hssdp) {
-                // Get by Channel-Address and Datapoint
-                if (regaObjects[needle].DPs && regaObjects[needle].DPs[hssdp]) {
-                    needle = regaObjects[needle].DPs[hssdp];
-                }
-            }
-        } else if (needle.match(/[a-zA-Z-]+\.[0-9A-Za-z-]+:[0-9]+\.[A-Z_]+/)) {
-            // Get by full BidCos-Address
-            addrArr = needle.split(".");
-            if (regaIndex.Address[addrArr[1]]) {
-                needle = regaObjects[regaIndex.Address[addrArr[1]]].DPs[addArr[2]];
-            }
-        } else {
-            return false;
-        }
-    }
+
     return needle;
 
 }
@@ -289,7 +272,7 @@ function restApi(req, res) {
     var status = 500;
 
     res.set("Access-Control-Allow-Origin", "*");
-
+    adapter.log.info('api ' + command);
     switch(command) {
         case "getPlainValue":
             responseType = "plain";
@@ -341,8 +324,8 @@ function restApi(req, res) {
             for (var i = 0; i < dps.length; i++) {
                 var parts = dps[i].split(";");
                 dp = findDatapoint(parts[0], parts[1]);
-                if (dp) {
-                    response[dps[i]] = {"val":datapoints[dp][0], "ts":datapoints[dp][3]};
+                if (states[dp]) {
+                    response[dps[i]] = {"val":states[dp].val, "ts":states[dp].ts};
                 }
             }
             break;

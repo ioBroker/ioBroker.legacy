@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style type="text/css">
+        .box {
+            width: 100px;
+            height: 30px;
+            border: 1px solid black;
+        }
+        .status-1, .status-true {
+            background-color: green;
+        }
+        .status-0, .status-false {
+            background-color: red;
+        }
+    </style>
+
+</head>
+    <body>
+        <h1>SlimUI Beispielseite</h1>
+        <h3>Button um einen Wert zu setzen</h3>
+
+        <input type="button" data-dp="90020" data-val="false" value="Datenpunkt 90020 auf false setzen"/>
+
+        <button data-dp="90020" data-val="true">Datenpunkt 90020 auf true setzen</button>
+
+        <h3>Toggle Button</h3>
+        <input type="button" data-dp="90020" data-toggle="true" value="Datenpunkt 90020 togglen"/>
+
+        <h3>Anzeige von Werten (&lt;span&gt;)</h3>
+        <p>Die Aussentemperatur beträgt <span data-dp="Temperatur Garten;TEMPERATURE" data-digits="1"></span>°C
+            (letzte Änderung: <span data-dp="11612" data-timestamp="true"></span>)</p>
+
+        <h3>Dropdown-Menü zum anzeigen und setzen von Werten</h3>
+        <select data-dp="950">
+            <option value="0">Wert 0</option>
+            <option value="1">Wert 1</option>
+            <option value="2">Wert 2</option>
+        </select>
+
+        <h3>Eingabe-Feld zum anzeigen und setzen von Werten</h3>
+        <input type="text" data-dp="950"/>
+
+        <h3>Checkbox zum anzeigen und setzen von Werten (1/0)</h3>
+        <input id="test_id" type="checkbox" data-dp="hue.0.Philips hue.Hue Lamp Hobbyraum.on"/> Hue 1 Hobbyraum
+        (letzte Änderung: <span data-dp="hue.0.Philips hue.Hue Lamp Hobbyraum.on" data-timestamp="true"></span>)
+        <br/>
+
+        <input id="test_id2" type="checkbox" data-dp="1963"/> Licht Küche Arbeitsfläche
+        <br/>
+
+        <input id="test_id3" type="checkbox" data-dp="1844"/> Licht Esstisch
+
+        <h3>CSS Klassen setzen</h3>
+        <div data-dp="90020" data-class="status" class="box"></div>
+
+    </body>
+    <script type="text/javascript" src="slimui.min.js"></script>
+</html>
