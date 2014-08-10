@@ -284,7 +284,7 @@ function restApi(req, res) {
             if (!dp || !datapoints[dp]) {
                 response = "error: datapoint not found";
             } else {
-                response = String(datapoints[dp][0]);
+                response = String(states[dp].val);
                 status = 200;
             }
             break;
@@ -301,7 +301,7 @@ function restApi(req, res) {
                 status = 200;
                 response = {id:dp};
                 if (datapoints[dp]) {
-                    response.value = datapoints[dp][0];
+                    response.value = states[dp].val;
                     response.ack = datapoints[dp][2];
                     response.timestamp = datapoints[dp][1];
                     response.lastchange = datapoints[dp][3];
@@ -360,7 +360,7 @@ function restApi(req, res) {
                 response = {error: "object/datapoint not given"};
             }
             var dp = findDatapoint(tmpArr[1], tmpArr[2]);
-            var value = datapoints[dp][0];
+            var value = states[dp].val;
             if (value === true) value = 1;
             if (value === false) value = 0;
             value = 1 - parseInt(value, 10);
@@ -578,11 +578,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('logDp', function (id) {
-            if (!datapoints[id]) {
-                return;
-            }
-            var ts = Math.round((new Date()).getTime() / 1000);
-            devLog(ts, id, datapoints[id][0]);
+
         });
 
         socket.on('execCmd', function (cmd, callback) {
@@ -1118,7 +1114,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('getSettings', function (callback) {
-            callback(settings);
+            callback(adapter.config);
         });
 
         socket.on('getVersion', function(callback) {
@@ -1127,24 +1123,24 @@ function initSocketIO(_io) {
 
         socket.on('getDatapoints', function(callback) {
             adapter.log.debug("socket.io <-- getData");
-
+//TODO
             callback(datapoints);
         });
 
         socket.on('getDatapoint', function(id, callback) {
             adapter.log.debug("socket.io <-- getDatapoint " + id);
 
-            callback(id, datapoints[id]);
+            callback(id, [states[id].val, states[id].ts, states[id].ack, states[id].lc]);
         });
 
         socket.on('getObjects', function(callback) {
             adapter.log.debug("socket.io <-- getObjects");
-            callback(regaObjects);
+            callback(objects);
         });
 
         socket.on('getIndex', function(callback) {
             adapter.log.debug("socket.io <-- getIndex");
-            callback(regaIndex);
+           // callback(regaIndex);
         });
 
         socket.on('getStringtable', function(callback) {
@@ -1157,181 +1153,11 @@ function initSocketIO(_io) {
 
 
         function delObject(id, isRecursion) {
-            if (!id) return;
 
-            adapter.log.info("deleting object id="+id);
-
-            // find children
-            for (var cid in regaObjects) {
-                if (regaObjects[cid].Parent == id) {
-                    // recursion
-                    delObject(cid, true);
-                }
-            }
-
-            var obj = regaObjects[id];
-            if (obj) {
-                if (regaIndex.Name[obj.Name] && regaIndex.Name[obj.Name][0] == id) {
-                    delete regaIndex.Name[obj.Name];
-                }
-                if (regaIndex.Address[obj.Address] && regaIndex.Address[obj.Address][0] == id) {
-                    delete regaIndex.Address[obj.Address];
-                }
-            }
-
-            delete regaObjects[id];
-
-
-            if (datapoints[id]) {
-                delete datapoints[id];
-            }
-
-            if (!isRecursion) {
-                saveDatapoints();
-                savePersistentObjects();
-            }
         }
 
-
-
         function setObject(id, obj, callback) {
-            if (!obj) {
-                return;
-            }
-            if (obj._findNextId) {
-                delete obj._findNextId;
-                while (regaObjects[id]) {
-                    id += 1;
-                }
-            }
-            if (obj.rooms) {
-                for (var i = 0; i < obj.rooms.length; i++) {
-                    if (obj.rooms[i] === "") {
-                        continue;
-                    }
-                    var roomId;
-                    if (regaIndex.ENUM_ROOMS.indexOf(obj.rooms[i]) != -1) {
-                        roomId = obj.rooms[i];
-                    } else if (regaIndex.Name[obj.rooms[i]] && regaIndex.Name[obj.rooms[i]][1] == "ENUM_ROOMS") {
-                        roomId = regaIndex.Name[obj.rooms[i]][0];
-                    } else {
-                        roomId = nextId(66000);
-                        regaIndex.ENUM_ROOMS.push(roomId);
-                        if (!regaIndex.Name[obj.rooms[i]]) {
-                            regaIndex.Name[obj.rooms[i]] = [
-                                roomId, "ENUM_ROOMS", null
-                            ];
-                        }
-                        regaObjects[roomId] = {
-                            "Name": obj.rooms[i],
-                            "TypeName": "ENUM_ROOMS",
-                            "EnumInfo": "",
-                            "Channels": []
-                        };
-                        adapter.log.info("setObject room "+obj.rooms[i]+" created");
-                    }
-                    if (roomId && regaObjects[roomId].Channels.indexOf(id) == -1) {
-                        regaObjects[roomId].Channels.push(id);
-                    }
-                }
-                delete obj.rooms
-            }
-            if (obj.funcs) {
-                for (var i = 0; i < obj.funcs.length; i++) {
-                    if (obj.funcs[i] === "") {
-                        continue;
-                    }
-                    var funcId;
-                    if (regaIndex.ENUM_FUNCTIONS.indexOf(obj.funcs[i]) != -1) {
-                        funcId = obj.funcs[i];
-                    } else if (regaIndex.Name[obj.funcs[i]] && regaIndex.Name[obj.funcs[i]][1] == "ENUM_FUNCTIONS") {
-                        funcId = regaIndex.Name[obj.funcs[i]][0];
-                    } else {
-                        funcId = nextId(66000);
-                        regaIndex.ENUM_FUNCTIONS.push(funcId);
-                        if (!regaIndex.Name[obj.funcs[i]]) {
-                            regaIndex.Name[obj.funcs[i]] = [
-                                funcId, "ENUM_FUNCTIONS", null
-                            ];
-                        }
-                        regaObjects[funcId] = {
-                            "Name": obj.funcs[i],
-                            "TypeName": "ENUM_FUNCTIONS",
-                            "EnumInfo": "",
-                            "Channels": []
-                        };
-                        adapter.log.info("setObject function "+obj.funcs[i]+" created");
-                    }
-                    if (funcId && regaObjects[funcId].Channels.indexOf(id) == -1) {
-                        regaObjects[funcId].Channels.push(id);
-                    }
-                }
-                delete obj.funcs;
-            }
-            if (obj.favs) {
-                for (var i = 0; i < obj.favs.length; i++) {
-                    if (obj.favs[i] === "") {
-                        continue;
-                    }
-                    var favId;
-                    if (regaIndex.FAVORITE.indexOf(obj.favs[i]) != -1) {
-                        favId = obj.favs[i];
-                    } else if (regaIndex.Name[obj.favs[i]] && regaIndex.Name[obj.favs[i]][1] == "FAVORITE") {
-                        favId = regaIndex.Name[obj.favs[i]][0];
-                    } else {
-                        favId = nextId(66000);
-                        regaIndex.FAVORITE.push(favId);
-                        if (!regaIndex.Name[obj.favs[i]]) {
-                            regaIndex.Name[obj.favs[i]] = [
-                                favId, "ENUM_FUNCTIONS", null
-                            ];
-                        }
-                        regaObjects[favId] = {
-                            "Name": obj.favs[i],
-                            "TypeName": "FAVORITE",
-                            "EnumInfo": "",
-                            "Channels": []
-                        };
-                        adapter.log.info("setObject favorite "+obj.favs[i]+" created");
-                    }
-                    if (favId && regaObjects[favId].Channels.indexOf(id) == -1) {
-                        regaObjects[favId].Channels.push(id);
-                    }
-                }
-                delete obj.favs;
-            }
 
-            if (obj.TypeName) {
-                if (!regaIndex[obj.TypeName]) {
-                    regaIndex[obj.TypeName] = [];
-                }
-                if (regaIndex[obj.TypeName].indexOf(id) == -1) {
-                    regaIndex[obj.TypeName].push(id);
-                }
-            }
-
-            if (obj.Name) {
-                regaIndex.Name[obj.Name] = [id, obj.TypeName, obj.Parent];
-            }
-
-            if (obj.Address) {
-                regaIndex.Address[obj.Address] = [id, obj.TypeName, obj.Parent];
-            }
-            if (obj.TypeName && obj.TypeName.match(/DP$/)) {
-                if (!obj.ValueUnit) {
-                    obj.ValueUnit = "";
-                }
-                if (!datapoints[id] || obj.Value) {
-                    adapter.log.debug("adding dp "+id);
-                    datapoints[id] = [obj.Value, formatTimestamp()];
-                }
-            }
-
-            regaObjects[id] = obj;
-
-            if (callback) {
-                callback(id);
-            }
         }
 
         socket.on('setObject', setObject);
