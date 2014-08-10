@@ -117,7 +117,15 @@ function main() {
 }
 
 
-
+function setState(id, val, ts, ack, callback) {
+    adapter.setState(id, {
+        val: val,
+        ts: ts,
+        ack: ack
+    }, function () {
+        if (typeof callback === 'function') callback();
+    });
+}
 
 
 
@@ -520,7 +528,7 @@ function initWebserver() {
         server.listen(adapter.config.ioListenPort);
         adapter.log.info("webserver     listening on port "+adapter.config.ioListenPort);
         io = socketio(server);
-       // io.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        io.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(io);
     }
 
@@ -528,7 +536,7 @@ function initWebserver() {
         serverSsl.listen(adapter.config.ioListenPortSsl);
         adapter.log.info("webserver ssl listening on port "+adapter.config.ioListenPortSsl);
         ioSsl = socketio.listen(serverSsl);
-     //   ioSsl.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        ioSsl.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(ioSsl);
 
     }
@@ -540,7 +548,7 @@ function initWebserver() {
 
 function initSocketIO(_io) {
 
-    /*
+    /* todo
     _io.configure(function () {
 
         this.set('heartbeat timeout', 25);
@@ -551,14 +559,14 @@ function initSocketIO(_io) {
             if ((!isHttps && adapter.config.authentication.enabled) || (isHttps && adapter.config.authentication.enabledSsl)) {
                 // do not check if localhost
                 if(handshakeData.address.address.toString() == "127.0.0.1") {
-                    adapter.log.verbose("local authentication " + handshakeData.address.address);
+                    adapter.log.debug("local authentication " + handshakeData.address.address);
                     callback(null, true);
                 } else
                 if (handshakeData.query["key"] === undefined || handshakeData.query["key"] != authHash) {
                     adapter.log.warn("authentication error on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
                     callback ("Invalid session key", false);
                 } else{
-                    adapter.log.verbose("authentication successful on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
+                    adapter.log.debug("authentication successful on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
                     callback(null, true);
                 }
             } else {
@@ -571,7 +579,7 @@ function initSocketIO(_io) {
     _io.sockets.on('connection', function (socket) {
         socketlist.push(socket);
         var address = socket.handshake.address;
-        adapter.log.verbose("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " connected");
+        adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " connected");
 
         socket.on('log', function (sev, msg) {
             switch (sev) {
@@ -609,7 +617,7 @@ function initSocketIO(_io) {
                 adapter.log.debug("script result: " + obj);
                 result = obj;
             });
-            scr_prc.on ("exit", function (code, signal) {
+            scr_prc.on("exit", function (code, signal) {
                 if (callback) {
                     adapter.log.debug("script end result: " + result);
                     callback(script, arg, result);
@@ -618,11 +626,11 @@ function initSocketIO(_io) {
         });
 
         socket.on('restartAdapter', function (adapter) {
-            return restartAdapter(adapter)
+            //return restartAdapter(adapter)
         });
 
         socket.on('updateAddon', function (url, name) {
-            var path = __dirname + "/update-addon.js";
+          /*  var path = __dirname + "/update-addon.js";
             adapter.log.info("starting "+path+" "+url+" "+name);
             var updateProcess = childProcess.fork(path, [url, name]);
             updateProcess.on("close", function (code) {
@@ -637,7 +645,7 @@ function initSocketIO(_io) {
                 if (ioSsl) {
                     ioSsl.sockets.emit("ioMessage", "Update "+name+msg);
                 }
-            });
+            });*/
         });
 
         socket.on('updateSelf', function () {
@@ -798,11 +806,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('reloadData', function () {
-            regaReady = false;
 
-            updateStatus();
-            clearRegaData();
-            loadRegaData(0, null, true);
         });
 
         // Get list of all IP address on device
@@ -839,43 +843,18 @@ function initSocketIO(_io) {
             }
         });
 
-        socket.on('restart', function () {
-            adapter.log.info("received restart command");
-            if (os.platform().match(/^win/) && fs.existsSync(__dirname + "/restart_ccu_io.bat")) {
-                // Try to start script, that restarts service
-                childProcess.execFile(__dirname + "/restart_ccu_io.bat");
-
-                // If after 3 seconds this process still alive, try to restart over ccu.io-server.js
-                setTimeout(function () {
-                    childProcess.fork(__dirname + "/ccu.io-server.js", ["restart"]);
-                }, 3000);
-            } else {
-                childProcess.fork(__dirname + "/ccu.io-server.js", ["restart"]);
-            }
+        socket.on('restart', function () {    
         });
 
         socket.on('restartRPC', function () {
-            initRpc();
         });
 
-        socket.on('reloadScriptEngine', function (callback) {
-            if (adapter.config.scriptEngineEnabled) {
-                if (childScriptEngine) {
-                    childScriptEngine.kill();
-                    delete childScriptEngine;
-                }
-                setTimeout(function () {
-                    startScriptEngine();
-                    if (callback) {
-                        callback();
-                    }
-                }, 1500);
-            }
+        socket.on('reloadScriptEngine', function (callback) {           
         });
 
         socket.on('readdir', function (path, callback) {
             path = __dirname+"/"+path;
-            adapter.log.verbose("socket.io <-- readdir "+path);
+            adapter.log.debug("socket.io <-- readdir "+path);
             fs.readdir(path, function (err, data) {
                 if (err) {
                     callback(undefined);
@@ -887,7 +866,7 @@ function initSocketIO(_io) {
 
         socket.on('readdirStat', function(path, callback) {
             path = __dirname + "/" + path;
-            adapter.log.verbose("socket.io <-- readdirStat " + path);
+            adapter.log.debug("socket.io <-- readdirStat " + path);
 
             fs.readdir(path, function(err, files) {
                 var data = [];
@@ -915,7 +894,7 @@ function initSocketIO(_io) {
         socket.on('rename', function(path_old,path, callback) {
             var p_old = __dirname + "/" + path_old;
             var p = __dirname + "/" + path;
-            adapter.log.verbose("socket.io <-- rename " + path);
+            adapter.log.debug("socket.io <-- rename " + path);
 
             fs.rename(p_old, p, function(err) {
                 if (err) {
@@ -930,7 +909,7 @@ function initSocketIO(_io) {
         socket.on('mkDir', function(path, callback) {
             var p = __dirname + "/" + path;
 
-            adapter.log.verbose("socket.io <-- mkDir " + path);
+            adapter.log.debug("socket.io <-- mkDir " + path);
 
             fs.mkdir(p,"0777", function(err) {
                 if (err) {
@@ -945,7 +924,7 @@ function initSocketIO(_io) {
         socket.on('removeRecursive', function(path, callback) {
             var p = __dirname + "/" + path;
 
-            adapter.log.verbose("socket.io <-- mkDir " + path);
+            adapter.log.debug("socket.io <-- mkDir " + path);
             fs.removeRecursive(p,function(err,status){
                 if (err) {
                     adapter.log.error("socket.io <-- mkDir "+path);
@@ -962,11 +941,11 @@ function initSocketIO(_io) {
             if (JSON.stringify(obj) != content) {
                 adapter.log.warn("writeFile strange JSON mismatch "+name);
             }
-            adapter.log.verbose("socket.io <-- writeFile "+name+" "+content);
+            adapter.log.debug("socket.io <-- writeFile "+name+" "+content);
             fs.exists(adapter.config.datastorePath+name, function (exists) {
                 if (exists) {
                     fs.rename(adapter.config.datastorePath+name, adapter.config.datastorePath+name+".bak", function() {
-                        adapter.log.verbose("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
+                        adapter.log.debug("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
                         fs.writeFile(adapter.config.datastorePath+name, content);
                         if (callback) { callback(); }
                     });
@@ -986,11 +965,11 @@ function initSocketIO(_io) {
             if (JSON.stringify(obj) != content) {
                 adapter.log.warn("writeFile strange JSON mismatch "+name);
             }
-            adapter.log.verbose("socket.io <-- writeFile "+name+" "+content);
+            adapter.log.debug("socket.io <-- writeFile "+name+" "+content);
             fs.exists(adapter.config.datastorePath+name, function (exists) {
                 if (exists) {
                     fs.rename(adapter.config.datastorePath+name, adapter.config.datastorePath+name+".bak", function() {
-                        adapter.log.verbose("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
+                        adapter.log.debug("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
                         fs.writeFile(adapter.config.datastorePath+name, content);
                         if (callback) { callback(); }
                     });
@@ -1004,11 +983,11 @@ function initSocketIO(_io) {
         socket.on('writeRawFile', function (path, content, callback) {
             // Todo Fehler abfangen
 
-            adapter.log.verbose("socket.io <-- writeRawFile "+path);
+            adapter.log.debug("socket.io <-- writeRawFile "+path);
             fs.exists(__dirname+"/"+path, function (exists) {
                 if (exists) {
                     fs.rename(__dirname+"/"+path, __dirname+"/"+path+".bak", function() {
-                        adapter.log.verbose("socket.io <-- writeRawFile created "+__dirname+"/"+path+".bak");
+                        adapter.log.debug("socket.io <-- writeRawFile created "+__dirname+"/"+path+".bak");
                         fs.writeFile(__dirname+"/"+path, content);
                         if (callback) { callback(); }
                     });
@@ -1033,7 +1012,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readFile', function (name, callback) {
-            adapter.log.verbose("socket.io <-- readFile "+name);
+            adapter.log.debug("socket.io <-- readFile "+name);
 
             fs.readFile(adapter.config.datastorePath+name, function (err, data) {
                 if (err) {
@@ -1053,7 +1032,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readRawFile', function (name, callback) {
-            adapter.log.verbose("socket.io <-- readFile "+name);
+            adapter.log.debug("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name, function (err, data) {
                 if (err) {
@@ -1066,7 +1045,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readBase64', function (name, callback) {
-            adapter.log.verbose("socket.io <-- readFile "+name);
+            adapter.log.debug("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name,"base64", function (err, data) {
                 if (err) {
@@ -1082,7 +1061,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('touchFile', function (name, callback) {
-            adapter.log.verbose("socket.io <-- touchFile "+name);
+            adapter.log.debug("socket.io <-- touchFile "+name);
             if (!fs.existsSync(__dirname+"/"+name)) {
                 adapter.log.info("creating empty file "+name);
                 var stream = fs.createWriteStream(__dirname+"/"+name);
@@ -1104,7 +1083,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readJsonFile', function (name, callback) {
-            adapter.log.verbose("socket.io <-- readFile "+name);
+            adapter.log.debug("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name, function (err, data) {
                 if (err) {
@@ -1148,17 +1127,11 @@ function initSocketIO(_io) {
         });
 
         socket.on('getStatus', function (callback) {
-            var status = {
-                ccuReachable: ccuReachable,
-                ccuRegaUp: ccuRegaUp,
-                ccuRegaData: regaReady,
-                initsDone: initsDone
-            }
+            var status = {};
             callback(status);
         });
 
         socket.on('getNextId', function (start, callback) {
-            callback(nextId(start));
         });
 
         socket.on('getSettings', function (callback) {
@@ -1170,54 +1143,35 @@ function initSocketIO(_io) {
         });
 
         socket.on('getDatapoints', function(callback) {
-            adapter.log.verbose("socket.io <-- getData");
+            adapter.log.debug("socket.io <-- getData");
 
             callback(datapoints);
         });
 
         socket.on('getDatapoint', function(id, callback) {
-            adapter.log.verbose("socket.io <-- getDatapoint " + id);
+            adapter.log.debug("socket.io <-- getDatapoint " + id);
 
             callback(id, datapoints[id]);
         });
 
         socket.on('getObjects', function(callback) {
-            adapter.log.verbose("socket.io <-- getObjects");
+            adapter.log.debug("socket.io <-- getObjects");
             callback(regaObjects);
         });
 
         socket.on('getIndex', function(callback) {
-            adapter.log.verbose("socket.io <-- getIndex");
+            adapter.log.debug("socket.io <-- getIndex");
             callback(regaIndex);
         });
 
         socket.on('getStringtable', function(callback) {
-            adapter.log.verbose("socket.io <-- getStringtable");
-            callback(stringtable);
+
         });
 
         socket.on('addStringVariable', function(name, desc, str, callback) {
-            adapter.log.verbose("socket.io <-- addStringVariable");
-            regahss.addStringVariable(name, desc, str, function (id) {
-                if (id) {
-                    var ts = formatTimestamp();
-                    datapoints[id] = [str, ts, true];
-                    regaObjects[id] = {Name:name, TypeName: "VARDP", DPInfo: "DESC", ValueType: 20, ValueSubType: 11};
-                    regaIndex.VARDP.push(id);
-                    regaIndex.Name[id] = [13305, "VARDP", null];
-                    adapter.log.info("added string variable "+id+" "+name);
-                }
-                callback(id);
-            });
+
         });
 
-        function nextId(id) {
-            var id = id || 100000;
-            while (regaObjects[id]) {
-                id += 1;
-            }
-            return id;
-        }
 
         function delObject(id, isRecursion) {
             if (!id) return;
@@ -1385,7 +1339,7 @@ function initSocketIO(_io) {
                     obj.ValueUnit = "";
                 }
                 if (!datapoints[id] || obj.Value) {
-                    adapter.log.verbose("adding dp "+id);
+                    adapter.log.debug("adding dp "+id);
                     datapoints[id] = [obj.Value, formatTimestamp()];
                 }
             }
@@ -1401,54 +1355,36 @@ function initSocketIO(_io) {
 
         socket.on('delObject', delObject);
 
-        // Eine Homematic Servicemeldung bestätigen
         socket.on('alarmReceipt', function (id) {
-            adapter.log.verbose("rega          alarmReceipt "+id+" "+regaObjects[id].Name);
-            regahss.script("dom.GetObject("+id+").AlReceipt();");
+
         });
 
         socket.on('setState', function(arr, callback) {
-            // Todo Delay!
-
-            //adapter.log.info("setState"+JSON.stringify(arr));
-
             var id =    arr[0],
                 val =   arr[1],
                 ts =    arr[2],
                 ack =   arr[3];
 
-            if (typeof id == "string") {
-                if (regaIndex.Name[id]) {
-                    id = regaIndex.Name[id][0];
-                } else if (regaIndex.Address[id]) {
-                    id = regaIndex.Address[id][0];
-                }
-            }
-
-            //adapter.log.info("setState"+JSON.stringify(arr));
-
-            setState(id,val,ts,ack, callback);
+            setState(id, val, ts, ack, callback);
 
         });
 
         socket.on('programExecute', programExecute);
 
         socket.on('runScript', function(script, callback) {
-            adapter.log.verbose("socket.io <-- script");
-            regahss.script(script, function (data) {
-                if (callback) { callback(data); }
-            });
+            adapter.log.debug("socket.io <-- script");
+            // todo
         });
 
         socket.on('disconnect', function () {
             var address = socket.handshake.address;
-            adapter.log.verbose("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " disconnected");
+            adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " disconnected");
             socketlist.splice(socketlist.indexOf(socket), 1);
         });
 
         socket.on('close', function () {
             var address = socket.handshake.address;
-            adapter.log.verbose("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " closed");
+            adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " closed");
             socketlist.splice(socketlist.indexOf(socket), 1);
         });
     });
