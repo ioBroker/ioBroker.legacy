@@ -4,6 +4,7 @@
   "private": true,
   "dependencies": {
     "express": "~4.4.4",
+    "body-parser": "~1.5.2",
     "socket.io": "~1.0.6",
     "crypto": "0.0.3"
   }
