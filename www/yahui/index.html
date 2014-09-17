@@ -1,0 +1,255 @@
+<!doctype html>
+<html manifest="cache.manifest" lang="de" xmlns="http://www.w3.org/1999/html">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="HandheldFriendly" content="True">
+        <meta name="mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <meta http-equiv="cleartype" content="on">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+        <meta name="viewport" id="vp" content="initial-scale=1.0,user-scalable=no,maximum-scale=1" media="(device-height: 568px)" />
+
+        <title>yahui</title>
+
+        <link rel="apple-touch-icon" href="images/yahui-icon-60.png" />
+        <link rel="apple-touch-icon" sizes="76x76" href="images/yahui-icon-76.png" />
+        <link rel="apple-touch-icon" sizes="120x120" href="images/yahui-icon-120.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="images/yahui-icon-152.png" />
+        <link rel="apple-touch-startup-image" href="images/yahui-splash.png" />
+        <link rel="apple-touch-startup-image" media="(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)" href="images/yahui-splash-iphone5.png">
+        <link rel="apple-touch-startup-image" media="(device-width: 768px) and (device-height: 1024px) and (orientation: portrait)" href="images/yahui-splash-ipad-portrait.png">
+        <link rel="apple-touch-startup-image" media="(device-width: 768px) and (device-height: 1024px) and (orientation: landscape)" href="images/yahui-splash-ipad-landscape.png">
+
+        <!-- Hier den Pfad/Dateinamen anpassen für individuelle jqueryMobile Themes -->
+        <link rel="stylesheet" href="../lib/css/jquery.mobile-1.3.2.min.css" />
+
+        <link rel="shortcut icon" sizes="196x196" href="images/yahui-icon-196.png">
+        <link rel="shortcut icon" href="images/yahui-icon-32.ico" type="image/x-icon">
+        <link rel="icon" href="images/yahui-icon-32.ico" type="image/x-icon">
+        <link rel="stylesheet" href="css/yahui.css" />
+
+        <!-- Hier Kommentarzeichen entfernen um eigene Style-Datei einzubinden -->
+        <!-- <link rel="stylesheet" href="css/user.css" /> -->
+        <link rel="stylesheet" href="../lib/css/add2home-2.0.8.css" />
+
+        <script src="../lib/js/jquery-1.11.0.min.js"></script>
+        <script src="../lib/js/loStorage.js"></script>
+        <script src="../auth/auth.js"></script>
+        <script src="../socket.io/socket.io.js"></script>
+        <script type="text/javascript">
+            $(document).on("mobileinit", function(){
+                $.mobile.autoInitializePage = false;
+            });
+        </script>
+        <script src="../lib/js/jquery.mobile-1.3.2.min.js"></script>
+        <script src="js/settings-dist.js"></script>
+        <script src="js/settings.js"></script>
+        <script src="js/yahui.js"></script>
+        <script src="../lib/js/add2home-2.0.8.js"></script>
+    </head>
+
+    <body style="height:100%" >
+        <div id="favs" data-role="page" class="responsive-grid">
+            <div data-role="header" data-position="fixed" data-id="f2" data-theme="b">
+                <h1><span class="yahui-prefix"></span>Favoriten</h1>
+                <a href="#info" data-rel="dialog" data-role="button" data-inline="true" data-icon="info" data-iconpos="notext" class="yahui-info ui-btn-right"></a>
+            </div>
+            <div data-role="content">
+                <ul id="listFavs" data-role="listview" data-inset="true" class="yahui-sortable">
+                </ul>
+            </div>
+            <div data-position="fixed"  data-tap-toggle="false" data-role="footer" data-id="f1">
+                <div class="yahui-navbar" data-role="navbar" data-grid="c">
+                    <ul>
+                        <li class="yahui-nav-favs"><a href="#" class="ui-btn-active ui-state-persist" data-icon="star">Favoriten</a></li>
+                        <li class="yahui-nav-rooms"><a href="#rooms" data-icon="home">Räume</a></li>
+                        <li class="yahui-nav-funcs"><a href="#funcs" data-icon="grid">Gewerke</a></li>
+                        <li class="yahui-nav-links"><a href="#links" data-icon="plus">Erweiterungen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="rooms" data-role="page"  class="responsive-grid" style="height:100%">
+            <div data-role="header" data-position="fixed" data-id="f2" data-theme="b">
+                <h1><span class="yahui-prefix"></span>Räume</h1>
+                 <a href="#info" data-rel="dialog" data-role="button" data-inline="true" data-icon="info" data-iconpos="notext" class="yahui-info ui-btn-right"></a>
+            </div>
+            <div data-role="content">
+                <ul id="listRooms" data-role="listview" data-inset="true" class="yahui-sortable">
+                </ul>
+            </div>
+            <div data-position="fixed"  data-tap-toggle="false" data-role="footer" data-id="f1">
+                <div class="yahui-navbar" data-role="navbar" data-grid="c">
+                    <ul>
+                        <li class="yahui-nav-favs"><a href="#favs" data-icon="star">Favoriten</a></li>
+                        <li class="yahui-nav-rooms"><a href="#" class="ui-btn-active ui-state-persist" data-icon="home">Räume</a></li>
+                        <li class="yahui-nav-funcs"><a href="#funcs" data-icon="grid">Gewerke</a></li>
+                        <li class="yahui-nav-links"><a href="#links" data-icon="plus">Erweiterungen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="funcs" data-role="page" class="responsive-grid" style="height:100%">
+            <div data-role="header" data-position="fixed" data-id="f2" data-theme="b">
+                <h1><span class="yahui-prefix"></span>Gewerke</h1>
+                <a href="#info" data-rel="dialog" data-role="button" data-inline="true" data-icon="info" data-iconpos="notext" class="yahui-info ui-btn-right"></a>
+            </div>
+            <div data-role="content">
+                <div data-role="content">
+                    <ul id="listFunctions" data-role="listview" data-inset="true" class="yahui-sortable">
+                    </ul>
+                </div>
+            </div>
+            <div data-position="fixed"  data-tap-toggle="false" data-role="footer" data-id="f1">
+                <div class="yahui-navbar" data-role="navbar" data-grid="c">
+                    <ul>
+                        <li class="yahui-nav-favs"><a href="#favs" data-icon="star">Favoriten</a></li>
+                        <li class="yahui-nav-rooms"><a href="#rooms" data-icon="home">Räume</a></li>
+                        <li class="yahui-nav-funcs"><a href="#" class="ui-btn-active ui-state-persist" data-icon="grid">Gewerke</a></li>
+                        <li class="yahui-nav-links"><a href="#links" data-icon="plus">Erweiterungen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="links" data-role="page" style="height:100%" class="responsive-grid">
+            <div data-role="header" data-position="fixed" data-id="f2" data-theme="b">
+                <a class="yahui-edit" href="#add_link" data-rel="dialog" data-role="button" data-inline="true" data-icon="plus">Erweiterung hinzufügen</a>
+                <h1><span class="yahui-prefix"></span>Erweiterungen</h1>
+                <a href="#info" data-rel="dialog" data-role="button" data-inline="true" data-icon="info" data-iconpos="notext" class="yahui-info ui-btn-right"></a>
+            </div>
+            <div data-role="content">
+                <ul id="listLinks" data-role="listview" data-inset="true" class="yahui-sortable"></ul>
+            </div>
+            <div data-position="fixed"  data-tap-toggle="false" data-role="footer" data-id="f1">
+                <div class="yahui-navbar" data-role="navbar" data-grid="c">
+                    <ul>
+                        <li class="yahui-nav-favs"><a href="#favs" data-icon="star">Favoriten</a></li>
+                        <li class="yahui-nav-rooms"><a href="#rooms" data-icon="home">Räume</a></li>
+                        <li class="yahui-nav-funcs"><a href="#funcs" data-icon="grid">Gewerke</a></li>
+                        <li class="yahui-nav-links"><a href="#"  class="ui-btn-active ui-state-persist" data-icon="plus">Erweiterungen</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="info" data-role="page" data-history="false" data-theme="b">
+            <div data-role="header" data-theme="b"><h1>yahui <span class="yahui-version"></span></h1></div>
+            <div data-role="content" data-theme="b">
+                <h3><i>Yet Another Homematic User Interface</i></h3>
+                Copyright &copy; 2013 <a data-ajax="false" href="http://hobbyquaker.github.io" target="_blank">hobbyquaker</a><br/>
+                Lizenz: <a data-ajax="false" href="http://creativecommons.org/licenses/by-nc/3.0/deed.de" target="_blank">CC BY-NC 3.0</a> Kommerzielle Nutzung untersagt!
+                <p>
+                    <a class="yahui-editswitch yahui-noedit" data-ajax="false" data-role="button" data-icon="gear" href="?edit" target="_self">Edit-Modus</a>
+                    <a class="yahui-editswitch yahui-edit" data-ajax="false" data-role="button" data-icon="gear" href="./" target="_self">Edit-Modus beenden</a>
+                    Im Edit-Modus können Erweiterungen hinzugefügt, bearbeitet und gelöscht werden, außerdem können per Drag&Drop Elemente umsortiert und Bilder hochgeladen werden.
+                </p>
+                <br/>
+                <p>
+                    <a data-ajax="false" data-role="button" data-icon="info" href="https://github.com/hobbyquaker/yahui/blob/master/README.md" target="_blank">Dokumentation</a>
+                    <a data-ajax="false" data-role="button" data-icon="info" href="http://homematic-forum.de/forum/viewforum.php?f=48" target="_blank">Forum</a>
+                    <br/>
+                </p>
+                <br/>
+                CCU.IO Version <span id="ccuioversion"></span>
+
+                <p></p>
+                <p style="font-size: 10px">
+                    Die Veröffentlichung dieser Software erfolgt in der Hoffnung, daß sie Ihnen von Nutzen sein wird, aber OHNE IRGENDEINE GARANTIE, sogar ohne die implizite Garantie der MARKTREIFE oder der VERWENDBARKEIT FÜR EINEN BESTIMMTEN ZWECK.
+                </p>
+            </div>
+        </div>
+        <div id="add_link" data-role="page" data-history="false" data-theme="b">
+            <div data-role="header" data-theme="b"><h1>Erweiterung hinzufügen</h1></div>
+            <div data-role="content" data-theme="b">
+                <label for="link_text">Titel</label><input type="text" name="link_text" id="link_text"/>
+                <label for="link_subtext">Untertitel</label><input type="text" name="link_subtext" id="link_subtext"/>
+                <label for="link_url">URL</label><input type="text" name="link_url" id="link_url"/>
+                <label for="link_iframe">Typ</label>
+                <select name="link_iframe" id="link_iframe">
+                    <option value="true">in yahui integriert anzeigen</option>
+                    <option value="false">in neuem Browser-Fenster öffnen</option>
+                </select>
+                <p>&nbsp;</p>
+                <a href="#" data-role="button" data-icon="plus" id="link_add">hinzufügen</a>
+            </div>
+        </div>
+        <div id="edit_link" data-role="dialog" data-history="false" data-theme="b">
+            <div data-role="header" data-theme="b"><h1>Erweiterung editieren</h1></div>
+            <div data-role="content" data-theme="b">
+                <input type="hidden" id="edit_link_id"/>
+                <label for="link_text">Titel</label><input type="text" name="link_text" id="edit_link_text"/>
+                <label for="link_subtext">Untertitel</label><input type="text" name="link_subtext" id="edit_link_subtext"/>
+                <label for="link_url">URL</label><input type="text" name="link_url" id="edit_link_url"/>
+                <label for="link_iframe">Typ</label>
+                <select name="link_iframe" id="edit_link_iframe">
+                    <option value="true">in yahui integriert anzeigen</option>
+                    <option value="false">in neuem Browser-Fenster öffnen</option>
+                </select>
+                <p>&nbsp;</p>
+                <a href="#" data-role="button" data-icon="check" id="link_edit">speichern</a>
+                <a href="#" data-role="button" data-icon="delete" id="link_del">löschen</a>
+            </div>
+        </div>
+        <div id="edit_channel" data-role="dialog" data-history="false" data-theme="b">
+            <div data-role="header" data-theme="b"><h1>Element editieren</h1></div>
+            <div data-role="content" data-theme="b">
+                <input type="hidden" id="edit_channel_id"/>
+                <input type="hidden" id="edit_channel_page_id"/>
+                <table>
+                    <tr>
+                        <td><span id="edit_channel_name"></span></td>
+                        <td>(<span id="edit_channel_type"></span>)</td>
+                    </tr>
+                </table>
+
+                <input type="text" name="edit_channel_alias" id="edit_channel_alias"/>
+                <div class="ui-grid-b">
+                    <div class="ui-block-a div_vertical">Kanal anzeigen</div>
+                    <div class="ui-block-b">
+                        <select id="edit_channel_visible" data-role="slider">
+                            <option value="0">nein</option>
+                            <option value="1">ja</option>
+                        </select>
+                     </div>
+                </div>
+
+                <div data-edit-area="KEY" class="edit-area" style="display:none">
+                    <p>&nbsp;</p>
+                    <select id="hide_press_long">
+                        <option value="false">Button langer Tastendruck anzeigen</option>
+                        <option value="true">Button langer Tastendruck ausblenden</option>
+                    </select>
+                    <label for="text_press_short">Beschriftung Button kurzer Tastendruck</label><input type="text" name="text_press_short" id="text_press_short"/>
+                    <label for="text_press_long">Beschriftung Button langer Tastendruck</label><input type="text" name="text_press_long" id="text_press_long"/>
+                </div>
+
+                <p>&nbsp;</p>
+
+                <div class="ui-grid-b">
+                    <div class="ui-block-a"><a href="#" data-role="button" data-icon="check" id="channel_edit">speichern</a></div>
+                    <div class="ui-block-b"><a href="#" data-role="button" data-icon="back" id="channel_reset">rücksetzen</a></div>
+                    <div class="ui-block-c"><a href="#" data-role="button" data-icon="delete" id="channel_cancel">abbrechen</a></div>
+                </div>
+
+                <hr/>
+
+                <div class="ui-grid-a">
+                    <div class="ui-block-a"> <a href="#" data-role="button" data-icon="arrow-u" id="img_upload">Bild hochladen</a></div>
+                    <div class="ui-block-b"> <a href="#" data-role="button" data-icon="delete" id="img_delete">Bild löschen</a></div>
+                </div>
+
+            </div>
+        </div>
+        <div data-role="popup" data-overlay-theme="a" id="ccu-io-disconnect">
+            <p>Keine Verbindung zu CCU.IO<p>
+        </div>
+        <div data-role="popup" id="program-executed" data-theme="e" data-overlay-theme="a">
+            <p>Programm ausgeführt<p>
+        </div>
+        <div data-role="popup" id="program-failed" data-theme="e" data-overlay-theme="a">
+            <p>Programmausführung gescheitert<p>
+        </div>
+        <div id="edit_indicator" class="ui-shadow ui-btn-corner-all ui-btn-inline" style="border: 1px solid #044062; box-shadow: 0 1px 0 rgba(255,255,255,.3); display: none; font-weight: 700; top: 8px; text-shadow: 0 1px 0 #194b7e; font-family: Helvetica,Arial,sans-serif; color:#fff; padding:3px; padding-left: 10px; padding-right: 10px; position: absolute; right: 40px; background-color: orange; z-index:10000;">Edit-Modus</div>
+    </body>
+</html>
