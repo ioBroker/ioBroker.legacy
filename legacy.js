@@ -1,3 +1,5 @@
+
+var fs =   require('fs');
 var express =   require('express');
 var bodyParser = require('body-parser');
 var socketio =  require('socket.io');
@@ -21,6 +23,24 @@ var webserverUp = false,
         waitId:       0
     };
 
+var socketlist = [];
+var datapoints = {};
+var regaObjects = {};
+var regaIndex = {
+    Name: {},
+    Address: {},
+    ENUM_ROOMS: [],
+    ENUM_FUNCTIONS: [],
+    FAVORITE: [],
+    DEVICE: [],
+    CHANNEL: [],
+    HSSDP: [],
+    VARDP: [],
+    ALDP: [],
+    ALARMDP: [],
+    PROGRAM: []
+};
+
 var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     name:           'legacy',
@@ -31,15 +51,15 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     objectChange: function (id, obj) {
         objects[id] = obj;
-
-
+        io2rega(obj);
     },
 
     stateChange: function (id, state) {
         states[id] = state;
+        datapoints[id] = [state.val, state.ts, state.ack, state.lc];
         var arr = [id, state.val, state.ts, state.ack, state.lc];
-        if (io)     io.sockets.emit('event', id, arr);
-        if (ioSsl)  ioSsl.sockets.emit('event', id, arr);
+        if (io)     io.sockets.emit('event', arr);
+        if (ioSsl)  ioSsl.sockets.emit('event', arr);
     },
 
     unload: function (callback) {
@@ -118,18 +138,7 @@ function main() {
 
 
 function setState(id, val, ts, ack, callback) {
-
-    if (objects[id] && objects[id].common) {
-        console.log(objects[id].common.type, typeof val, JSON.stringify(val));
-        if (objects[id].common.type === 'boolean' && typeof val === 'number') val = val > 0 ? true : false;
-        if (objects[id].common.type === 'boolean' && typeof val === 'string') val = (val !== 'false') ? true : false;
-        if (objects[id].common.type === 'number' && typeof val === 'string') val = parseFloat(val);
-        if (objects[id].common.type === 'number' && typeof val === 'boolean') val = val ? 1 : 0;
-    }
-
-    console.log('setState ' + id + ' val=' + JSON.stringify(val) + ' ts=' + ts + ' ack=' + ack);
-
-
+    adapter.log.info('setState' + id + ' ' + val + ' ' + ts + ' ' + ack);
     adapter.setForeignState(id, {
         val: val,
         ts: ts,
@@ -139,23 +148,170 @@ function setState(id, val, ts, ack, callback) {
     });
 }
 
+function io2rega(obj) {
+    var id = obj._id;
 
+    if (id.match(/^system/) || id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/)) return null;
+
+    var name = (obj.common && obj.common.name);
+    if (!name) {
+        name = id;
+    } else {
+        // FIXME
+        regaIndex.Name[name] = id;
+    }
+
+    // Todo Address
+
+
+
+    if (id.match(/^enum/)) {
+        if (id.match(/^enum\.rooms\./)) {
+            regaIndex.ENUM_ROOMS.push(id);
+            regaObjects[id] = {
+                "Name": name,
+                "TypeName": "ENUM_ROOMS",
+                "EnumInfo": (obj.common && obj.common.desc) || '',
+                "Channels": (obj.common && obj.common.members) || []
+            };
+        } else if (id.match(/^enum\.functions\./)) {
+            regaIndex.ENUM_FUNCTIONS.push(id);
+            regaObjects[id] = {
+                "Name": name,
+                "TypeName": "ENUM_FUNCTIONS",
+                "EnumInfo": (obj.common && obj.common.desc) || '',
+                "Channels": (obj.common && obj.common.members) || []
+            };
+        } else if (id.match(/^enum\.favorites\.Admin\./)) {
+            regaIndex.FAVORITE.push(id);
+            regaObjects[id] = {
+                "Name": name,
+                "TypeName": "FAVORITE",
+                "EnumInfo": (obj.common && obj.common.desc) || '',
+                "Channels": (obj.common && obj.common.members) || []
+            };
+        }
+
+    } else if (obj.type === 'device' || obj.type === 'channel' || obj.type === 'state') {
+        var valueType;
+        var valueSubType;
+        var valueList;
+        var valueUnit;
+        var typeName;
+        var DPs;
+
+        switch (obj.type) {
+            case 'device':
+                typeName = 'DEVICE';
+                regaIndex.DEVICE.push(id);
+                break;
+            case 'channel':
+                typeName = 'CHANNEL';
+                if (obj.children) {
+                    DPs = {};
+                    for (var k = 0; k < obj.children.length; k++) {
+                        DPs[obj.children[k].split('.').pop()] = obj.children[k];
+                    }
+                }
+                regaIndex.CHANNEL.push(id);
+                break;
+            case 'state':
+            default:
+                valueUnit = (obj.common && obj.common.unit) || '';
+                if (obj.parent) {
+                    typeName = 'HSSDP';
+                    regaIndex.HSSDP.push(id);
+
+                } else {
+                    typeName = 'VARDP';
+                    regaIndex.VARDP.push(id);
+
+                }
+
+        }
+
+        switch (obj.common.type) {
+            case 'boolean':
+                valueType = 2;
+                break;
+            case 'string':
+                valueType = 20;
+                break;
+            case 'number':
+                if (obj.common.states) {
+                    var tmp = [];
+                    for (var i = obj.common.min; i <= obj.common.max; i++) {
+                        tmp.push(obj.common.states[i]);
+                    }
+                    valueList = tmp.join(';');
+                } else {
+                    valueList = undefined;
+                }
+                break;
+            default:
+
+        }
+
+        regaObjects[id] = {
+            Name: (obj.common && obj.common.name) || id,
+            TypeName: typeName,
+            DPInfo: (obj.common && obj.common.desc) || '',
+            ValueType: valueType,
+            ValueSubType: valueSubType,
+            ValueList: valueList,
+            ValueUnit: valueUnit,
+            Parent: obj.parent,
+            HssType: obj.native && obj.native.TYPE,
+            DPs: DPs
+        };
+
+
+
+    }
+}
 
 function getData() {
+
+    // Create language variable
+    datapoints[69999] = ['en', formatTimestamp(), true];
+    regaObjects[69999] = {Name:"SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "DESC", ValueType: 20, ValueSubType: 11};
+    regaIndex.VARDP.push(69999);
+
+
     adapter.log.info('requesting all states');
     adapter.getForeignStates('*', function (err, res) {
         adapter.log.info('received all states');
         states = res;
+        for (var state in states) {
+            datapoints[state] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
+        }
+
+
     });
     adapter.log.info('requesting all objects');
     adapter.objects.getObjectList({include_docs: true}, function (err, res) {
         adapter.log.info('received all objects');
         res = res.rows;
         objects = {};
-        for (var i = 0; i < res.length; i++) {
-            objects[res[i].doc._id] = res[i].doc;
+        //console.log(res.length);
+        var l = res.length;
+        for (var j = 0; j < l; j++) {
+            var id = res[j].doc._id;
+            var obj = res[j].doc;
+
+            objects[id] = obj;
+
+            io2rega(obj);
+
         }
+        //console.log(' --- regaIndex ---');
+        //console.log(regaIndex);
+
     });
+
+
+
+
 }
 
 function uploadParser(req, res, next) {
@@ -193,7 +349,36 @@ function uploadParser(req, res, next) {
 }
 
 function findDatapoint(needle, hssdp) {
-
+    if (!datapoints[needle]) {
+        if (regaIndex.Name[needle]) {
+            // Get by Name
+            needle = regaIndex.Name[needle][0];
+            if (hssdp) {
+                // Get by Name and Datapoint
+                if (regaObjects[needle].DPs) {
+                    return regaObjects[needle].DPs[hssdp];
+                } else {
+                    return false;
+                }
+            }
+        } else if (regaIndex.Address[needle]) {
+            needle = regaIndex.Address[needle][0];
+            if (hssdp) {
+                // Get by Channel-Address and Datapoint
+                if (regaObjects[needle].DPs && regaObjects[needle].DPs[hssdp]) {
+                    needle = regaObjects[needle].DPs[hssdp];
+                }
+            }
+        } else if (needle.match(/[a-zA-Z-]+\.[0-9A-Za-z-]+:[0-9]+\.[A-Z_]+/)) {
+            // Get by full BidCos-Address
+            addrArr = needle.split(".");
+            if (regaIndex.Address[addrArr[1]]) {
+                needle = regaObjects[regaIndex.Address[addrArr[1]]].DPs[addArr[2]];
+            }
+        } else {
+            return false;
+        }
+    }
     return needle;
 
 }
@@ -272,7 +457,7 @@ function restApi(req, res) {
     var status = 500;
 
     res.set("Access-Control-Allow-Origin", "*");
-    adapter.log.info('api ' + command);
+
     switch(command) {
         case "getPlainValue":
             responseType = "plain";
@@ -284,7 +469,7 @@ function restApi(req, res) {
             if (!dp || !datapoints[dp]) {
                 response = "error: datapoint not found";
             } else {
-                response = String(states[dp].val);
+                response = String(datapoints[dp][0]);
                 status = 200;
             }
             break;
@@ -301,7 +486,7 @@ function restApi(req, res) {
                 status = 200;
                 response = {id:dp};
                 if (datapoints[dp]) {
-                    response.value = states[dp].val;
+                    response.value = datapoints[dp][0];
                     response.ack = datapoints[dp][2];
                     response.timestamp = datapoints[dp][1];
                     response.lastchange = datapoints[dp][3];
@@ -324,8 +509,8 @@ function restApi(req, res) {
             for (var i = 0; i < dps.length; i++) {
                 var parts = dps[i].split(";");
                 dp = findDatapoint(parts[0], parts[1]);
-                if (states[dp]) {
-                    response[dps[i]] = {"val":states[dp].val, "ts":states[dp].ts};
+                if (dp) {
+                    response[dps[i]] = {"val":datapoints[dp][0], "ts":datapoints[dp][3]};
                 }
             }
             break;
@@ -360,7 +545,7 @@ function restApi(req, res) {
                 response = {error: "object/datapoint not given"};
             }
             var dp = findDatapoint(tmpArr[1], tmpArr[2]);
-            var value = states[dp].val;
+            var value = datapoints[dp][0];
             if (value === true) value = 1;
             if (value === false) value = 0;
             value = 1 - parseInt(value, 10);
@@ -511,7 +696,7 @@ function initWebserver() {
         server.listen(adapter.config.ioListenPort);
         adapter.log.info("webserver     listening on port "+adapter.config.ioListenPort);
         io = socketio(server);
-        io.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        io.set('logger', { debug: function(obj) {adapter.log.info("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(io);
     }
 
@@ -519,7 +704,7 @@ function initWebserver() {
         serverSsl.listen(adapter.config.ioListenPortSsl);
         adapter.log.info("webserver ssl listening on port "+adapter.config.ioListenPortSsl);
         ioSsl = socketio.listen(serverSsl);
-        ioSsl.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.debug("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        ioSsl.set('logger', { debug: function(obj) {adapter.log.info("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(ioSsl);
 
     }
@@ -542,14 +727,14 @@ function initSocketIO(_io) {
             if ((!isHttps && adapter.config.authentication.enabled) || (isHttps && adapter.config.authentication.enabledSsl)) {
                 // do not check if localhost
                 if(handshakeData.address.address.toString() == "127.0.0.1") {
-                    adapter.log.debug("local authentication " + handshakeData.address.address);
+                    adapter.log.info("local authentication " + handshakeData.address.address);
                     callback(null, true);
                 } else
                 if (handshakeData.query["key"] === undefined || handshakeData.query["key"] != authHash) {
                     adapter.log.warn("authentication error on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
                     callback ("Invalid session key", false);
                 } else{
-                    adapter.log.debug("authentication successful on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
+                    adapter.log.info("authentication successful on "+(isHttps ? "https from " : "http from ") + handshakeData.address.address);
                     callback(null, true);
                 }
             } else {
@@ -562,7 +747,7 @@ function initSocketIO(_io) {
     _io.sockets.on('connection', function (socket) {
         socketlist.push(socket);
         var address = socket.handshake.address;
-        adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " connected");
+        adapter.log.info("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " connected");
 
         socket.on('log', function (sev, msg) {
             switch (sev) {
@@ -578,7 +763,11 @@ function initSocketIO(_io) {
         });
 
         socket.on('logDp', function (id) {
-
+            if (!datapoints[id]) {
+                return;
+            }
+            var ts = Math.round((new Date()).getTime() / 1000);
+            devLog(ts, id, datapoints[id][0]);
         });
 
         socket.on('execCmd', function (cmd, callback) {
@@ -593,12 +782,12 @@ function initSocketIO(_io) {
             scr_prc.on('message', function(obj) {
                 // Receive results from child process
                 console.log ("Message: " + obj);
-                adapter.log.debug("script result: " + obj);
+                adapter.log.info("script result: " + obj);
                 result = obj;
             });
             scr_prc.on("exit", function (code, signal) {
                 if (callback) {
-                    adapter.log.debug("script end result: " + result);
+                    adapter.log.info("script end result: " + result);
                     callback(script, arg, result);
                 }
             });
@@ -833,7 +1022,7 @@ function initSocketIO(_io) {
 
         socket.on('readdir', function (path, callback) {
             path = __dirname+"/"+path;
-            adapter.log.debug("socket.io <-- readdir "+path);
+            adapter.log.info("socket.io <-- readdir "+path);
             fs.readdir(path, function (err, data) {
                 if (err) {
                     callback(undefined);
@@ -845,7 +1034,7 @@ function initSocketIO(_io) {
 
         socket.on('readdirStat', function(path, callback) {
             path = __dirname + "/" + path;
-            adapter.log.debug("socket.io <-- readdirStat " + path);
+            adapter.log.info("socket.io <-- readdirStat " + path);
 
             fs.readdir(path, function(err, files) {
                 var data = [];
@@ -873,7 +1062,7 @@ function initSocketIO(_io) {
         socket.on('rename', function(path_old,path, callback) {
             var p_old = __dirname + "/" + path_old;
             var p = __dirname + "/" + path;
-            adapter.log.debug("socket.io <-- rename " + path);
+            adapter.log.info("socket.io <-- rename " + path);
 
             fs.rename(p_old, p, function(err) {
                 if (err) {
@@ -888,7 +1077,7 @@ function initSocketIO(_io) {
         socket.on('mkDir', function(path, callback) {
             var p = __dirname + "/" + path;
 
-            adapter.log.debug("socket.io <-- mkDir " + path);
+            adapter.log.info("socket.io <-- mkDir " + path);
 
             fs.mkdir(p,"0777", function(err) {
                 if (err) {
@@ -903,7 +1092,7 @@ function initSocketIO(_io) {
         socket.on('removeRecursive', function(path, callback) {
             var p = __dirname + "/" + path;
 
-            adapter.log.debug("socket.io <-- mkDir " + path);
+            adapter.log.info("socket.io <-- mkDir " + path);
             fs.removeRecursive(p,function(err,status){
                 if (err) {
                     adapter.log.error("socket.io <-- mkDir "+path);
@@ -920,16 +1109,16 @@ function initSocketIO(_io) {
             if (JSON.stringify(obj) != content) {
                 adapter.log.warn("writeFile strange JSON mismatch "+name);
             }
-            adapter.log.debug("socket.io <-- writeFile "+name+" "+content);
-            fs.exists(adapter.config.datastorePath+name, function (exists) {
+            adapter.log.info("socket.io <-- writeFile "+name+" "+content);
+            fs.exists(__dirname + '/datastore/' +name, function (exists) {
                 if (exists) {
-                    fs.rename(adapter.config.datastorePath+name, adapter.config.datastorePath+name+".bak", function() {
-                        adapter.log.debug("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
-                        fs.writeFile(adapter.config.datastorePath+name, content);
+                    fs.rename(__dirname + '/datastore/' +name, __dirname + '/datastore/' +name+".bak", function() {
+                        adapter.log.info("socket.io <-- writeFile created "+__dirname + '/datastore/' +name+".bak");
+                        fs.writeFile(__dirname + '/datastore/' +name, content);
                         if (callback) { callback(); }
                     });
                 } else {
-                    fs.writeFile(adapter.config.datastorePath+name, content);
+                    fs.writeFile(__dirname + '/datastore/' +name, content);
                     if (callback) { callback(); }
                 }
             });
@@ -944,16 +1133,16 @@ function initSocketIO(_io) {
             if (JSON.stringify(obj) != content) {
                 adapter.log.warn("writeFile strange JSON mismatch "+name);
             }
-            adapter.log.debug("socket.io <-- writeFile "+name+" "+content);
-            fs.exists(adapter.config.datastorePath+name, function (exists) {
+            adapter.log.info("socket.io <-- writeFile "+name+" "+content);
+            fs.exists(__dirname + '/datastore/' +name, function (exists) {
                 if (exists) {
-                    fs.rename(adapter.config.datastorePath+name, adapter.config.datastorePath+name+".bak", function() {
-                        adapter.log.debug("socket.io <-- writeFile created "+adapter.config.datastorePath+name+".bak");
-                        fs.writeFile(adapter.config.datastorePath+name, content);
+                    fs.rename(__dirname + '/datastore/' +name, __dirname + '/datastore/' +name+".bak", function() {
+                        adapter.log.info("socket.io <-- writeFile created "+__dirname + '/datastore/' +name+".bak");
+                        fs.writeFile(__dirname + '/datastore/' +name, content);
                         if (callback) { callback(); }
                     });
                 } else {
-                    fs.writeFile(adapter.config.datastorePath+name, content);
+                    fs.writeFile(__dirname + '/datastore/' +name, content);
                     if (callback) { callback(); }
                 }
             });
@@ -962,11 +1151,11 @@ function initSocketIO(_io) {
         socket.on('writeRawFile', function (path, content, callback) {
             // Todo Fehler abfangen
 
-            adapter.log.debug("socket.io <-- writeRawFile "+path);
+            adapter.log.info("socket.io <-- writeRawFile "+path);
             fs.exists(__dirname+"/"+path, function (exists) {
                 if (exists) {
                     fs.rename(__dirname+"/"+path, __dirname+"/"+path+".bak", function() {
-                        adapter.log.debug("socket.io <-- writeRawFile created "+__dirname+"/"+path+".bak");
+                        adapter.log.info("socket.io <-- writeRawFile created "+__dirname+"/"+path+".bak");
                         fs.writeFile(__dirname+"/"+path, content);
                         if (callback) { callback(); }
                     });
@@ -991,18 +1180,18 @@ function initSocketIO(_io) {
         });
 
         socket.on('readFile', function (name, callback) {
-            adapter.log.debug("socket.io <-- readFile "+name);
+            adapter.log.info("socket.io <-- readFile "+name);
 
-            fs.readFile(adapter.config.datastorePath+name, function (err, data) {
+            fs.readFile(__dirname + '/datastore/' +name, function (err, data) {
                 if (err) {
-                    adapter.log.error("failed loading file "+adapter.config.datastorePath+name);
+                    adapter.log.error("failed loading file "+__dirname + '/datastore/' +name);
                     callback(undefined);
                 } else {
                     try {
                         var obj = JSON.parse(data);
                         callback(obj);
                     } catch (e) {
-                        adapter.log.warn("failed parsing JSON file "+adapter.config.datastorePath+name);
+                        adapter.log.warn("failed parsing JSON file "+__dirname + '/datastore/' +name);
                         callback(null, e);
                     }
 
@@ -1011,7 +1200,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readRawFile', function (name, callback) {
-            adapter.log.debug("socket.io <-- readFile "+name);
+            adapter.log.info("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name, function (err, data) {
                 if (err) {
@@ -1024,7 +1213,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readBase64', function (name, callback) {
-            adapter.log.debug("socket.io <-- readFile "+name);
+            adapter.log.info("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name,"base64", function (err, data) {
                 if (err) {
@@ -1040,7 +1229,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('touchFile', function (name, callback) {
-            adapter.log.debug("socket.io <-- touchFile "+name);
+            adapter.log.info("socket.io <-- touchFile "+name);
             if (!fs.existsSync(__dirname+"/"+name)) {
                 adapter.log.info("creating empty file "+name);
                 var stream = fs.createWriteStream(__dirname+"/"+name);
@@ -1062,7 +1251,7 @@ function initSocketIO(_io) {
         });
 
         socket.on('readJsonFile', function (name, callback) {
-            adapter.log.debug("socket.io <-- readFile "+name);
+            adapter.log.info("socket.io <-- readFile "+name);
 
             fs.readFile(__dirname+"/"+name, function (err, data) {
                 if (err) {
@@ -1114,37 +1303,38 @@ function initSocketIO(_io) {
         });
 
         socket.on('getSettings', function (callback) {
-            callback(adapter.config);
+            callback(settings);
         });
 
         socket.on('getVersion', function(callback) {
-            callback(adapter.config.version);
+            callback('2.0.0'); // TODO!
         });
 
         socket.on('getDatapoints', function(callback) {
-            adapter.log.debug("socket.io <-- getData");
-//TODO
+            adapter.log.info("socket.io <-- getData");
+
             callback(datapoints);
         });
 
         socket.on('getDatapoint', function(id, callback) {
-            adapter.log.debug("socket.io <-- getDatapoint " + id);
+            adapter.log.info("socket.io <-- getDatapoint " + id);
 
-            callback(id, [states[id].val, states[id].ts, states[id].ack, states[id].lc]);
+            callback(id, datapoints[id]);
         });
 
         socket.on('getObjects', function(callback) {
-            adapter.log.debug("socket.io <-- getObjects");
-            callback(objects);
+            adapter.log.info("socket.io <-- getObjects");
+            callback(regaObjects);
         });
 
-        socket.on('getIndex', function(callback) {
-            adapter.log.debug("socket.io <-- getIndex");
-           // callback(regaIndex);
+        socket.on('getIndex', function (callback) {
+
+            adapter.log.info("socket.io <-- getIndex");
+            callback(regaIndex);
         });
 
         socket.on('getStringtable', function(callback) {
-
+            callback({});
         });
 
         socket.on('addStringVariable', function(name, desc, str, callback) {
@@ -1153,11 +1343,181 @@ function initSocketIO(_io) {
 
 
         function delObject(id, isRecursion) {
+            if (!id) return;
 
+            adapter.log.info("deleting object id="+id);
+
+            // find children
+            for (var cid in regaObjects) {
+                if (regaObjects[cid].Parent == id) {
+                    // recursion
+                    delObject(cid, true);
+                }
+            }
+
+            var obj = regaObjects[id];
+            if (obj) {
+                if (regaIndex.Name[obj.Name] && regaIndex.Name[obj.Name][0] == id) {
+                    delete regaIndex.Name[obj.Name];
+                }
+                if (regaIndex.Address[obj.Address] && regaIndex.Address[obj.Address][0] == id) {
+                    delete regaIndex.Address[obj.Address];
+                }
+            }
+
+            delete regaObjects[id];
+
+
+            if (datapoints[id]) {
+                delete datapoints[id];
+            }
+
+            if (!isRecursion) {
+                saveDatapoints();
+                savePersistentObjects();
+            }
         }
 
-        function setObject(id, obj, callback) {
 
+
+        function setObject(id, obj, callback) {
+            if (!obj) {
+                return;
+            }
+            if (obj._findNextId) {
+                delete obj._findNextId;
+                while (regaObjects[id]) {
+                    id += 1;
+                }
+            }
+            if (obj.rooms) {
+                for (var i = 0; i < obj.rooms.length; i++) {
+                    if (obj.rooms[i] === "") {
+                        continue;
+                    }
+                    var roomId;
+                    if (regaIndex.ENUM_ROOMS.indexOf(obj.rooms[i]) != -1) {
+                        roomId = obj.rooms[i];
+                    } else if (regaIndex.Name[obj.rooms[i]] && regaIndex.Name[obj.rooms[i]][1] == "ENUM_ROOMS") {
+                        roomId = regaIndex.Name[obj.rooms[i]][0];
+                    } else {
+                        roomId = nextId(66000);
+                        regaIndex.ENUM_ROOMS.push(roomId);
+                        if (!regaIndex.Name[obj.rooms[i]]) {
+                            regaIndex.Name[obj.rooms[i]] = [
+                                roomId, "ENUM_ROOMS", null
+                            ];
+                        }
+                        regaObjects[roomId] = {
+                            "Name": obj.rooms[i],
+                            "TypeName": "ENUM_ROOMS",
+                            "EnumInfo": "",
+                            "Channels": []
+                        };
+                        adapter.log.info("setObject room "+obj.rooms[i]+" created");
+                    }
+                    if (roomId && regaObjects[roomId].Channels.indexOf(id) == -1) {
+                        regaObjects[roomId].Channels.push(id);
+                    }
+                }
+                delete obj.rooms
+            }
+            if (obj.funcs) {
+                for (var i = 0; i < obj.funcs.length; i++) {
+                    if (obj.funcs[i] === "") {
+                        continue;
+                    }
+                    var funcId;
+                    if (regaIndex.ENUM_FUNCTIONS.indexOf(obj.funcs[i]) != -1) {
+                        funcId = obj.funcs[i];
+                    } else if (regaIndex.Name[obj.funcs[i]] && regaIndex.Name[obj.funcs[i]][1] == "ENUM_FUNCTIONS") {
+                        funcId = regaIndex.Name[obj.funcs[i]][0];
+                    } else {
+                        funcId = nextId(66000);
+                        regaIndex.ENUM_FUNCTIONS.push(funcId);
+                        if (!regaIndex.Name[obj.funcs[i]]) {
+                            regaIndex.Name[obj.funcs[i]] = [
+                                funcId, "ENUM_FUNCTIONS", null
+                            ];
+                        }
+                        regaObjects[funcId] = {
+                            "Name": obj.funcs[i],
+                            "TypeName": "ENUM_FUNCTIONS",
+                            "EnumInfo": "",
+                            "Channels": []
+                        };
+                        adapter.log.info("setObject function "+obj.funcs[i]+" created");
+                    }
+                    if (funcId && regaObjects[funcId].Channels.indexOf(id) == -1) {
+                        regaObjects[funcId].Channels.push(id);
+                    }
+                }
+                delete obj.funcs;
+            }
+            if (obj.favs) {
+                for (var i = 0; i < obj.favs.length; i++) {
+                    if (obj.favs[i] === "") {
+                        continue;
+                    }
+                    var favId;
+                    if (regaIndex.FAVORITE.indexOf(obj.favs[i]) != -1) {
+                        favId = obj.favs[i];
+                    } else if (regaIndex.Name[obj.favs[i]] && regaIndex.Name[obj.favs[i]][1] == "FAVORITE") {
+                        favId = regaIndex.Name[obj.favs[i]][0];
+                    } else {
+                        favId = nextId(66000);
+                        regaIndex.FAVORITE.push(favId);
+                        if (!regaIndex.Name[obj.favs[i]]) {
+                            regaIndex.Name[obj.favs[i]] = [
+                                favId, "ENUM_FUNCTIONS", null
+                            ];
+                        }
+                        regaObjects[favId] = {
+                            "Name": obj.favs[i],
+                            "TypeName": "FAVORITE",
+                            "EnumInfo": "",
+                            "Channels": []
+                        };
+                        adapter.log.info("setObject favorite "+obj.favs[i]+" created");
+                    }
+                    if (favId && regaObjects[favId].Channels.indexOf(id) == -1) {
+                        regaObjects[favId].Channels.push(id);
+                    }
+                }
+                delete obj.favs;
+            }
+
+            if (obj.TypeName) {
+                if (!regaIndex[obj.TypeName]) {
+                    regaIndex[obj.TypeName] = [];
+                }
+                if (regaIndex[obj.TypeName].indexOf(id) == -1) {
+                    regaIndex[obj.TypeName].push(id);
+                }
+            }
+
+            if (obj.Name) {
+                regaIndex.Name[obj.Name] = [id, obj.TypeName, obj.Parent];
+            }
+
+            if (obj.Address) {
+                regaIndex.Address[obj.Address] = [id, obj.TypeName, obj.Parent];
+            }
+            if (obj.TypeName && obj.TypeName.match(/DP$/)) {
+                if (!obj.ValueUnit) {
+                    obj.ValueUnit = "";
+                }
+                if (!datapoints[id] || obj.Value) {
+                    adapter.log.info("adding dp "+id);
+                    datapoints[id] = [obj.Value, formatTimestamp()];
+                }
+            }
+
+            regaObjects[id] = obj;
+
+            if (callback) {
+                callback(id);
+            }
         }
 
         socket.on('setObject', setObject);
@@ -1178,22 +1538,24 @@ function initSocketIO(_io) {
 
         });
 
-        socket.on('programExecute', programExecute);
+        socket.on('programExecute', function () {
+            // todo
+        });
 
         socket.on('runScript', function(script, callback) {
-            adapter.log.debug("socket.io <-- script");
+            adapter.log.info("socket.io <-- script");
             // todo
         });
 
         socket.on('disconnect', function () {
             var address = socket.handshake.address;
-            adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " disconnected");
+            adapter.log.info("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " disconnected");
             socketlist.splice(socketlist.indexOf(socket), 1);
         });
 
         socket.on('close', function () {
             var address = socket.handshake.address;
-            adapter.log.debug("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " closed");
+            adapter.log.info("socket.io <-- " + address.address + ":" + address.port + " " + socket.transport + " closed");
             socketlist.splice(socketlist.indexOf(socket), 1);
         });
     });
@@ -1221,4 +1583,16 @@ function stop() {
     } catch (e) {
         adapter.log.error("something went wrong while terminating ssl webserver: "+e)
     }
+}
+
+
+function formatTimestamp() {
+    var timestamp = new Date();
+    var ts = timestamp.getFullYear() + '-' +
+        ("0" + (timestamp.getMonth() + 1).toString(10)).slice(-2) + '-' +
+        ("0" + (timestamp.getDate()).toString(10)).slice(-2) + ' ' +
+        ("0" + (timestamp.getHours()).toString(10)).slice(-2) + ':' +
+        ("0" + (timestamp.getMinutes()).toString(10)).slice(-2) + ':' +
+        ("0" + (timestamp.getSeconds()).toString(10)).slice(-2);
+    return ts;
 }

@@ -1,9 +1,9 @@
 {
     "common": {
         "name":                     "legacy",
-        "version":                  "0.0.0",
+        "version":                  "0.0.1",
         "title":                    "Legacy Web Adapter",
-        "desc":                     "provides a CCU.IO-compatible Webserver",
+        "desc":                     "provides a CCU.IO-compatible Webserver and ships with yahui and SlimUI",
         "platform":                 "Javascript/Node.js",
         "depends": [
             "www"
