@@ -1,9 +1,9 @@
 {
   "private": true,
   "dependencies": {
-    "body-parser": "^1.8.2",
-    "crypto": "0.0.3",
     "express": "~4.4.4",
-    "socket.io": "~1.0.6"
+    "body-parser": "~1.5.2",
+    "socket.io": "~1.0.6",
+    "crypto": "0.0.3"
   }
 }
