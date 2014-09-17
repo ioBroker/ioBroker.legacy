@@ -3,11 +3,8 @@
         "name":                     "legacy",
         "version":                  "0.0.1",
         "title":                    "Legacy Web Adapter",
-        "desc":                     "provides a CCU.IO-compatible Webserver and ships with yahui and SlimUI",
+        "desc":                     "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
         "platform":                 "Javascript/Node.js",
-        "depends": [
-            "www"
-        ],
         "mode":                     "daemon",
         "loglevel":                 "info"
     },
