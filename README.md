@@ -3,6 +3,7 @@ ioBroker.legacy
 
 CCU.IO compatible Webserver
 
+* DashUI
 * SimpleAPI
 * yahui
 * SlimUI
@@ -10,12 +11,12 @@ CCU.IO compatible Webserver
 
 ## Changelog
 
+#### 0.0.2
+* (hobbyquaker) DashUI
+
 #### 0.0.1
 
-* yahui basically working. Known Bugs: Hue Lamps aren't recognized. Needs further testing
-* SlimUI working
-* SimpleAPI basically working. Known Bugs in findDatapoint, until now only IDs should be used
+* (hobbyquaker) yahui basically working. Known Bugs: Hue Lamps aren't recognized. Needs further testing
+* (hobbyquaker) SlimUI working
+* (hobbyquaker) SimpleAPI basically working. Known Bugs in findDatapoint, until now only IDs should be used
 
-## Todo
-
-* DashUI
