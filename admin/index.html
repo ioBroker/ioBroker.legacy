@@ -1,0 +1,172 @@
+<html>
+
+<link rel="stylesheet" type="text/css" href="../../lib/css/themes/jquery-ui/redmond/jquery-ui.min.css"/>
+<script type="text/javascript" src="../../lib/js/jquery-1.11.1.min.js"></script>
+<script type="text/javascript" src="../../socket.io/socket.io.js"></script>
+<script type="text/javascript" src="../../lib/js/jquery-ui-1.10.3.full.min.js"></script>
+
+<link rel="stylesheet" type="text/css" href="../../css/adapter.css"/>
+<script type="text/javascript" src="../../js/translate.js"></script>
+<script type="text/javascript" src="../../js/adapter-settings.js"></script>
+
+
+<script type="text/javascript">
+    systemDictionary = {
+        "Legacy adapter settings": {
+            "de": "Legacy adapter settings",
+            "ru": "Legacy adapter settings"
+        }
+    };
+
+    function init() {
+        $('#save').button("disable");
+        $('#_password_confirm').val($('#authentication_password').val());
+    }
+
+    function setValue(id, value) {
+        // example: select elements with id=key and class=value and insert value
+        if ($('#' + id + '.value').attr('type') == 'checkbox') {
+            $('#' + id + '.value').prop('checked', value).change(function() {
+                changed = true;
+                $('#save').button("enable");
+            });
+        } else {
+            $('#' + id + '.value').val(value).change(function() {
+                changed = true;
+                $('#save').button("enable");
+            }).keyup(function() {
+                changed = true;
+                $('#save').button("enable");
+            });
+        }
+    }
+
+    function loadHelper(settings, param, subparam) {
+        if (!settings) return;
+
+        if (subparam && param) {
+            for (var key in settings[param][subparam]) {
+                if (typeof settings[param][subparam][key] != 'object') {
+                    if (key == "pass") {
+                        //settings[param][subparam][key] = decrypt("Zgfr56gFe87jJOM", settings[param][subparam][key]);
+                    };
+                    setValue(param + '_' + subparam + '_' + key, settings[param][subparam][key]);
+                } else {
+                    alert("4th level is not supported");
+                }
+            }
+        } else if (param) {
+            for (var key in settings[param]) {
+                if (typeof settings[param][key] != 'object') {
+                    setValue(param + '_' + key, settings[param][key]);
+                } else {
+                    loadHelper(settings, param, key);
+                }
+            }
+        } else {
+            for (var key in settings) {
+                if (typeof settings[key] != 'object') {
+                    setValue(key, settings[key]);
+                } else {
+                    loadHelper(settings, key);
+                }
+            }
+        }
+    }
+
+    // the function loadSettings has to exist ...
+    function load(settings) {
+        loadHelper(settings);
+
+        init ();
+    }
+    function saveHelper(obj, id, value) {
+        var ids = id.split('_');
+        if (ids.length === 1) {
+            obj[id] = value;
+        } else if (ids.length === 2) {
+            if (!obj[ids[0]]) obj[ids[0]] = {};
+            obj[ids[0]][ids[1]] = value;
+        } else if (ids.length === 3) {
+            if (ids[2] == "pass") {
+                //value = encrypt("Zgfr56gFe87jJOM", value);
+            }
+
+            if (!obj[ids[0]]) obj[ids[0]] = {};
+            if (!obj[ids[0]][ids[1]]) obj[ids[0]][ids[1]] = {};
+            obj[ids[0]][ids[1]][ids[2]] = value;
+        }
+        return obj;
+    }
+    function getSettings() {
+        var obj = {};
+        $('.value').each(function () {
+            var $this = $(this);
+            var id = $this.attr('id');
+
+            if ($this.attr('type') == 'checkbox') {
+                obj = saveHelper(obj, id, $this.prop('checked'))
+            } else {
+                obj = saveHelper(obj, id, $this.val())
+            }
+        });
+        return obj;
+    }
+    // ... and the function save has to exist.
+    // you have to make sure the callback is called with the settings object as first param!
+    function save(callback) {
+        if ($('#authentication_password').val() != $('#_password_confirm').val()) {
+            alert(_('Password and confirmation are not equal!'));
+            return;
+        }
+
+        // example: select elements with class=value and build settings object
+        changed = false;
+        callback(getSettings());
+        $('#save').button("disable");
+    }
+
+</script>
+
+<div id="adapter-container">
+    <table><tr><td><img src="legacy.png"></td><td><h3 class="translate">Legacy adapter settings</h3></td></tr></table>
+
+    <table>
+        <tr>
+            <td class="translate">Web server port:</td>
+            <td><input type="text" id="ioListenPort" size="5" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">Secure web server port:</td>
+            <td><input type="text" id="ioListenPortSsl" size="5" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">Cache enabled:</td>
+            <td><input type="checkbox" id="useCache" class="value"/></td>
+        </tr>
+        <tr><td colspan="2">&nbsp;</td></tr>
+        <tr>
+            <td class="translate">Authentication for unsecure server:</td>
+            <td><input type="checkbox" id="authentication_enabled" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">Authentication for secure server:</td>
+            <td><input type="checkbox" id="authentication_enabledSsl" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">User name:</td>
+            <td><input type="text" id="authentication_user" size="15" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">Password:</td>
+            <td><input type="password" id="authentication_password" size="15" class="value"/></td>
+        </tr>
+        <tr>
+            <td class="translate">Password confirmation:</td>
+            <td><input type="password" id="_password_confirm" size="15"/></td>
+        </tr>
+    </table>
+
+</div>
+
+</html>
