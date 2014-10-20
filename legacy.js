@@ -1,12 +1,15 @@
 
 var fs =   require('fs');
 var express =   require('express');
-var bodyParser = require('body-parser');
+var http =      require('http');
+var https =     require('https');
 var socketio =  require('socket.io');
 var crypto =    require('crypto');
 
 var states = {};
 var objects = {};
+
+var wwwDir = __dirname + '/www';
 
 var app;
 var appSsl;
@@ -24,7 +27,9 @@ var webserverUp = false,
     };
 
 var socketlist = [];
+
 var datapoints = {};
+var idMap = [];
 var regaObjects = {};
 var regaIndex = {
     Name: {},
@@ -51,13 +56,14 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     objectChange: function (id, obj) {
         objects[id] = obj;
-        io2rega(obj);
+        obj2rega(obj);
     },
 
     stateChange: function (id, state) {
         states[id] = state;
-        datapoints[id] = [state.val, state.ts, state.ack, state.lc];
-        var arr = [id, state.val, state.ts, state.ack, state.lc];
+        var regaId = idMap.indexOf(id);
+        datapoints[regaId] = [state.val, state.ts, state.ack, state.lc];
+        var arr = [regaId, state.val, state.ts, state.ack, state.lc];
         if (io)     io.sockets.emit('event', arr);
         if (ioSsl)  ioSsl.sockets.emit('event', arr);
     },
@@ -148,43 +154,98 @@ function setState(id, val, ts, ack, callback) {
     });
 }
 
-function io2rega(obj) {
+function id2rega(id) {
+
+    var idRega = idMap.indexOf(id);
+
+    if (idRega > 0) {
+        return idRega;
+    } else {
+        return createRegaId(id);
+    }
+}
+
+function createRegaId(id) {
+    var obj = objects[id];
+    if (!obj) return false;
+    //if (obj.type !== 'enum' && obj.type !== 'device' && obj.type !== 'channel' && obj.type !== 'state') return false;
+
+    var idRega = parseInt((obj && obj.legacy && obj.legacy.id), 10);
+
+    if (idRega) {
+        if (idMap[idRega] && idMap[idRega] !== obj._id) {
+            idRega = nextId(524288);
+            adapter.log.info('changing ' + obj._id + ' legacy id to ' + idRega);
+            objects[id].legacy = {id: idRega};
+            //adapter.extendForeignObject(obj._id, {legacy: {id: idRega}}, function (err, res) {});
+        } else {
+            adapter.log.debug('got ' + obj._id + ' legacy id  ' + idRega);
+        }
+    } else {
+        idRega = nextId(524288);
+        adapter.log.info('setting ' + obj._id + ' legacy id to ' + idRega);
+        objects[id].legacy = {id: idRega};
+        //adapter.extendForeignObject(obj._id, {legacy: {id: idRega}}, function (err, res) {});
+    }
+    idRega = parseInt(idRega, 10);
+    //console.log('create', id, idRega);
+    if (idRega > 0) {
+        idMap[idRega] = id;
+        return idRega;
+    } else {
+        return false;
+    }
+
+}
+
+
+function nextId(id) {
+    while (idMap[id]) {
+        id += 1;
+    }
+    return id;
+}
+
+function obj2rega(obj) {
     var id = obj._id;
 
-    if (id.match(/^system/) || id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/)) return null;
+    if (!obj) return null;
+    if (id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/)) return null;
 
-    var name = (obj.common && obj.common.name);
-    if (!name) {
-        name = id;
-    } else {
-        // FIXME
-        regaIndex.Name[name] = id;
-    }
 
     // Todo Address
 
 
 
     if (id.match(/^enum/)) {
+        var idRega = id2rega(id);
+
+        var name = obj.common && obj.common.name;
+        if (!name) {
+            name = id;
+        } else {
+            regaIndex.Name[name] = idRega;
+        }
+
         if (id.match(/^enum\.rooms\./)) {
-            regaIndex.ENUM_ROOMS.push(id);
-            regaObjects[id] = {
+            regaIndex.ENUM_ROOMS.push(idRega);
+            regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "ENUM_ROOMS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
                 "Channels": (obj.common && obj.common.members) || []
             };
         } else if (id.match(/^enum\.functions\./)) {
-            regaIndex.ENUM_FUNCTIONS.push(id);
-            regaObjects[id] = {
+            regaIndex.ENUM_FUNCTIONS.push(idRega);
+            regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "ENUM_FUNCTIONS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
                 "Channels": (obj.common && obj.common.members) || []
             };
         } else if (id.match(/^enum\.favorites\.Admin\./)) {
-            regaIndex.FAVORITE.push(id);
-            regaObjects[id] = {
+            regaIndex.FAVORITE.push(idRega);
+            regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "FAVORITE",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
@@ -193,6 +254,16 @@ function io2rega(obj) {
         }
 
     } else if (obj.type === 'device' || obj.type === 'channel' || obj.type === 'state') {
+        var idRega = id2rega(id);
+
+        var name = obj.common && obj.common.name;
+        if (!name) {
+            name = id;
+        } else {
+            // FIXME
+            regaIndex.Name[name] = idRega;
+        }
+
         var valueType;
         var valueSubType;
         var valueList;
@@ -203,28 +274,28 @@ function io2rega(obj) {
         switch (obj.type) {
             case 'device':
                 typeName = 'DEVICE';
-                regaIndex.DEVICE.push(id);
+                regaIndex.DEVICE.push(idRega);
                 break;
             case 'channel':
                 typeName = 'CHANNEL';
                 if (obj.children) {
                     DPs = {};
                     for (var k = 0; k < obj.children.length; k++) {
-                        DPs[obj.children[k].split('.').pop()] = obj.children[k];
+                        DPs[obj.children[k].split('.').pop()] = id2rega(obj.children[k]);
                     }
                 }
-                regaIndex.CHANNEL.push(id);
+                regaIndex.CHANNEL.push(idRega);
                 break;
             case 'state':
             default:
                 valueUnit = (obj.common && obj.common.unit) || '';
                 if (obj.parent) {
                     typeName = 'HSSDP';
-                    regaIndex.HSSDP.push(id);
+                    regaIndex.HSSDP.push(idRega);
 
                 } else {
                     typeName = 'VARDP';
-                    regaIndex.VARDP.push(id);
+                    regaIndex.VARDP.push(idRega);
 
                 }
 
@@ -252,7 +323,8 @@ function io2rega(obj) {
 
         }
 
-        regaObjects[id] = {
+        regaObjects[idRega] = {
+            // old CCU.IO attrs
             Name: (obj.common && obj.common.name) || id,
             TypeName: typeName,
             DPInfo: (obj.common && obj.common.desc) || '',
@@ -260,9 +332,16 @@ function io2rega(obj) {
             ValueSubType: valueSubType,
             ValueList: valueList,
             ValueUnit: valueUnit,
-            Parent: obj.parent,
+            Parent: id2rega(obj.parent),
             HssType: obj.native && obj.native.TYPE,
-            DPs: DPs
+            DPs: DPs,
+
+            // new ioBroker attrs
+            _id: obj._id,
+            common: obj.common,
+            native: obj.native,
+            children: obj.children,
+            parent: obj.parent
         };
 
 
@@ -278,16 +357,7 @@ function getData() {
     regaIndex.VARDP.push(69999);
 
 
-    adapter.log.info('requesting all states');
-    adapter.getForeignStates('*', function (err, res) {
-        adapter.log.info('received all states');
-        states = res;
-        for (var state in states) {
-            datapoints[state] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
-        }
 
-
-    });
     adapter.log.info('requesting all objects');
     adapter.objects.getObjectList({include_docs: true}, function (err, res) {
         adapter.log.info('received all objects');
@@ -298,14 +368,28 @@ function getData() {
         for (var j = 0; j < l; j++) {
             var id = res[j].doc._id;
             var obj = res[j].doc;
-
             objects[id] = obj;
-
-            io2rega(obj);
-
         }
-        //console.log(' --- regaIndex ---');
-        //console.log(regaIndex);
+        adapter.log.info('creating ccu.io objects');
+        for (var id in objects) {
+            obj2rega(objects[id]);
+        }
+
+        adapter.log.info('requesting all states');
+        adapter.getForeignStates('*', function (err, res) {
+            adapter.log.info('received states');
+            states = res;
+
+            for (var state in states) {
+                var idRega = id2rega(state);
+                datapoints[idRega] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
+                if (!idRega) console.log(state, idRega);
+
+            }
+
+
+        });
+
 
     });
 
@@ -629,10 +713,10 @@ function initWebserver() {
     if (app) {
         if (adapter.config.useCache) {
             var oneYear = 30758400000;
-            app.use('/', express.static(__dirname + '/www', { maxAge: oneYear }));
+            app.use('/', express.static(wwwDir, { maxAge: oneYear }));
             //app.use('/log', express.static(__dirname + '/log', { maxAge: oneYear }));
         } else {
-            app.use('/', express.static(__dirname + '/www'));
+            app.use('/', express.static(wwwDir));
             //app.use('/log', express.static(__dirname + '/log'));
         }
 
@@ -660,11 +744,11 @@ function initWebserver() {
     if (appSsl) {
         if (adapter.config.useCache) {
             var oneYear = 30758400000;
-            appSsl.use('/', express.static(__dirname + '/www', { maxAge: oneYear }));
+            appSsl.use('/', express.static(wwwDir, { maxAge: oneYear }));
             appSsl.use('/log', express.static(__dirname + '/log', { maxAge: oneYear }));
         }
         else {
-            appSsl.use('/', express.static(__dirname + '/www'));
+            appSsl.use('/', express.static(wwwDir));
             appSsl.use('/log', express.static(__dirname + '/log'));
         }
 
@@ -695,8 +779,8 @@ function initWebserver() {
     if (server) {
         server.listen(adapter.config.ioListenPort);
         adapter.log.info("webserver     listening on port "+adapter.config.ioListenPort);
-        io = socketio(server);
-        io.set('logger', { debug: function(obj) {adapter.log.info("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        io = socketio.listen(server);
+        io.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(io);
     }
 
@@ -704,7 +788,7 @@ function initWebserver() {
         serverSsl.listen(adapter.config.ioListenPortSsl);
         adapter.log.info("webserver ssl listening on port "+adapter.config.ioListenPortSsl);
         ioSsl = socketio.listen(serverSsl);
-        ioSsl.set('logger', { debug: function(obj) {adapter.log.info("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        ioSsl.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
         initSocketIO(ioSsl);
 
     }
@@ -979,14 +1063,14 @@ function initSocketIO(_io) {
 
         // Get list of all IP address on device
         socket.on('getIpAddresses', function (callback) {
-            var ifaces=os.networkInterfaces();
+            var ifaces = os.networkInterfaces();
             var ipArr = [];
             for (var dev in ifaces) {
                 var alias=0;
                 ifaces[dev].forEach(function(details){
                     if (details.family=='IPv4') {
-                        ipArr.push ({name: dev+(alias?':'+alias:''), address: details.address});
-                        ++alias;
+                        ipArr.push({name: dev + (alias ? ':' + alias : ''), address: details.address});
+                        alias += 1;
                     }
                 });
             }
@@ -1021,8 +1105,8 @@ function initSocketIO(_io) {
         });
 
         socket.on('readdir', function (path, callback) {
-            path = __dirname+"/"+path;
-            adapter.log.info("socket.io <-- readdir "+path);
+            path = __dirname + '/' + path;
+            adapter.log.info('socket.io <-- readdir ' + path);
             fs.readdir(path, function (err, data) {
                 if (err) {
                     callback(undefined);
@@ -1059,14 +1143,14 @@ function initSocketIO(_io) {
             });
         });
 
-        socket.on('rename', function(path_old,path, callback) {
+        socket.on('rename', function(path_old, path, callback) {
             var p_old = __dirname + "/" + path_old;
             var p = __dirname + "/" + path;
             adapter.log.info("socket.io <-- rename " + path);
 
             fs.rename(p_old, p, function(err) {
                 if (err) {
-                    adapter.log.error("socket.io <-- rename "+path);
+                    adapter.log.error("socket.io <-- rename " + path);
                     callback(err)
                 }else{
                     callback(true)
@@ -1534,7 +1618,7 @@ function initSocketIO(_io) {
                 ts =    arr[2],
                 ack =   arr[3];
 
-            setState(id, val, ts, ack, callback);
+            setState(idMap[id], val, ts, ack, callback);
 
         });
 
@@ -1544,7 +1628,7 @@ function initSocketIO(_io) {
 
         socket.on('runScript', function(script, callback) {
             adapter.log.info("socket.io <-- script");
-            // todo
+            // todoß
         });
 
         socket.on('disconnect', function () {

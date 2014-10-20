@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "legacy",
-        "version":                  "0.0.2",
+        "version":                  "0.1.0",
         "title":                    "Legacy Web Adapter",
         "desc":                     "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
         "platform":                 "Javascript/Node.js",
@@ -11,7 +11,8 @@
         "license":                  "CC NC-BY-SA 3.0",
         "authors": [
             "hobbyquaker <hq@ccu.io>"
-        ]
+        ],
+        "keywords":                 ["CCU.IO", "DashUI", "yahui", "SlimUI", "SimpleAPI"]
     },
     "native": {
         "ioListenPort":             8088,

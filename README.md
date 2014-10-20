@@ -11,6 +11,9 @@ CCU.IO compatible Webserver
 
 ## Changelog
 
+#### 0.1.0
+* (hobbyquaker) create CCU.IO-style IDs
+
 #### 0.0.2
 * (hobbyquaker) DashUI
 
