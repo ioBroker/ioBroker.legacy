@@ -1995,10 +1995,8 @@ var servConn = {
                                 var o = {};
                                 o['_' + dp + '.Value'] = obj[0];
                                 o['_' + dp + '.Timestamp'] = obj[1];
-                                console.log(o);
                                 localData.uiState.attr(o);
-                                console.log(id, localData.uiState.attr('_' + id));
-                            } catch (e) {
+                           } catch (e) {
                                 servConn.logError('Error: can\'t create uiState object for ' + dp + '(' + e + ')');
                             }
                         } else {

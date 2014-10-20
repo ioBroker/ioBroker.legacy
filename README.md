@@ -10,14 +10,18 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.1 (2014-10-20)
+* (bluefox) select dialog fixed
+* (bluefox) add gruntfile.js
+* (bluefox) add configuration page
 
-#### 0.1.0
+### 0.1.0
 * (hobbyquaker) create CCU.IO-style IDs
 
-#### 0.0.2
+### 0.0.2
 * (hobbyquaker) DashUI
 
-#### 0.0.1
+### 0.0.1
 
 * (hobbyquaker) yahui basically working. Known Bugs: Hue Lamps aren't recognized. Needs further testing
 * (hobbyquaker) SlimUI working

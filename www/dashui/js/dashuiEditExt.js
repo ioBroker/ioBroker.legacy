@@ -2044,10 +2044,10 @@ var hmSelect = {
                         }
                     }
                 }
-                if (isShow && hmSelect._filterLoc != "" && rows[i]['Location'].indexOf(hmSelect._filterLoc) == -1) {
+                if (isShow && hmSelect._filterLoc != "" && rows[i]['Location'] && rows[i]['Location'].indexOf(hmSelect._filterLoc) == -1) {
                     isShow = false;
                 }
-                if (isShow && hmSelect._filterFunc != "" && rows[i]['Function'].indexOf(hmSelect._filterFunc) == -1) {
+                if (isShow && hmSelect._filterFunc != "" && rows[i]['Function'] && rows[i]['Function'].indexOf(hmSelect._filterFunc) == -1) {
                     isShow = false;
                 }            
                 $("#"+rows[i].id,"#hmDevsContent").css({display: (isShow) ? "":"none"});

@@ -34,8 +34,8 @@ var regaObjects = {};
 var regaIndex = {
     Name: {},
     Address: {},
-    ENUM_ROOMS: [],
-    ENUM_FUNCTIONS: [],
+    ENUM_ROOMS: {},
+    ENUM_FUNCTIONS: {},
     FAVORITE: [],
     DEVICE: [],
     CHANNEL: [],
@@ -43,7 +43,7 @@ var regaIndex = {
     VARDP: [],
     ALDP: [],
     ALARMDP: [],
-    PROGRAM: []
+    PROGRAM: {}
 };
 
 var adapter = require(__dirname + '/../../lib/adapter.js')({
@@ -167,7 +167,7 @@ function id2rega(id) {
 
 function createRegaId(id) {
     var obj = objects[id];
-    if (!obj) return false;
+    if (!obj) return undefined;
     //if (obj.type !== 'enum' && obj.type !== 'device' && obj.type !== 'channel' && obj.type !== 'state') return false;
 
     var idRega = parseInt((obj && obj.legacy && obj.legacy.id), 10);
@@ -193,7 +193,7 @@ function createRegaId(id) {
         idMap[idRega] = id;
         return idRega;
     } else {
-        return false;
+        return undefined;
     }
 
 }
@@ -228,29 +228,44 @@ function obj2rega(obj) {
         }
 
         if (id.match(/^enum\.rooms\./)) {
-            regaIndex.ENUM_ROOMS.push(idRega);
+            regaIndex.ENUM_ROOMS[name] = idRega;
             regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "ENUM_ROOMS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
-                "Channels": (obj.common && obj.common.members) || []
+                "Channels": []
             };
+            if (obj.common && obj.common.members) {
+                for (var i = 0; i < obj.common.members.length; i++) {
+                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                }
+            }
         } else if (id.match(/^enum\.functions\./)) {
-            regaIndex.ENUM_FUNCTIONS.push(idRega);
+            regaIndex.ENUM_FUNCTIONS[name] = idRega;
             regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "ENUM_FUNCTIONS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
-                "Channels": (obj.common && obj.common.members) || []
+                "Channels": []
             };
+            if (obj.common && obj.common.members) {
+                for (var i = 0; i < obj.common.members.length; i++) {
+                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                }
+            }
         } else if (id.match(/^enum\.favorites\.Admin\./)) {
-            regaIndex.FAVORITE.push(idRega);
+            regaIndex.FAVORITE[name] = idRega;
             regaObjects[idRega] = {
                 "Name": name,
                 "TypeName": "FAVORITE",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
-                "Channels": (obj.common && obj.common.members) || []
+                "Channels": []
             };
+            if (obj.common && obj.common.members) {
+                for (var i = 0; i < obj.common.members.length; i++) {
+                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                }
+            }
         }
 
     } else if (obj.type === 'device' || obj.type === 'channel' || obj.type === 'state') {
@@ -322,6 +337,8 @@ function obj2rega(obj) {
             default:
 
         }
+        var parts = obj._id.split('.');
+        var addr = parts.splice(2);
 
         regaObjects[idRega] = {
             // old CCU.IO attrs
@@ -341,10 +358,23 @@ function obj2rega(obj) {
             common: obj.common,
             native: obj.native,
             children: obj.children,
-            parent: obj.parent
+            parent: obj.parent,
+            Interface: parts.join('.'),
+            Address: addr.join('.')
         };
 
-
+        if (regaObjects[idRega].TypeName == 'DEVICE') {
+            regaObjects[idRega].Channels = {};
+            for (var i = 0; i < regaObjects[idRega].children.length; i++) {
+                regaObjects[idRega].Channels[regaObjects[idRega].children[i]] = id2rega(regaObjects[idRega].children[i]);
+            }
+        } else
+        if (regaObjects[idRega].TypeName == 'CHANNEL') {
+            regaObjects[idRega].DPs = {};
+            for (var j = 0; j < regaObjects[idRega].children.length; j++) {
+                regaObjects[idRega].DPs[regaObjects[idRega].children[j]] = id2rega(regaObjects[idRega].children[j]);
+            }
+        }
 
     }
 }
@@ -659,7 +689,7 @@ function restApi(req, res) {
                 response = {error: "no program given"};
             }
             var id;
-            if (regaIndex.Program && regaIndex.PROGRAM.indexOf(tmpArr[1]) != -1) {
+            if (regaIndex.PROGRAM && regaIndex.PROGRAM[tmpArr[1]]) {
                 id = tmpArr[1]
             } else if (regaIndex.Name && regaIndex.Name[tmpArr[1]]) {
                 if (regaObjects[tmpArr[1]].TypeName == "PROGRAM") {
@@ -1480,13 +1510,13 @@ function initSocketIO(_io) {
                         continue;
                     }
                     var roomId;
-                    if (regaIndex.ENUM_ROOMS.indexOf(obj.rooms[i]) != -1) {
+                    if (regaIndex.ENUM_ROOMS[obj.rooms[i]]) {
                         roomId = obj.rooms[i];
                     } else if (regaIndex.Name[obj.rooms[i]] && regaIndex.Name[obj.rooms[i]][1] == "ENUM_ROOMS") {
                         roomId = regaIndex.Name[obj.rooms[i]][0];
                     } else {
                         roomId = nextId(66000);
-                        regaIndex.ENUM_ROOMS.push(roomId);
+                        regaIndex.ENUM_ROOMS[obj.rooms[i]] = roomId;
                         if (!regaIndex.Name[obj.rooms[i]]) {
                             regaIndex.Name[obj.rooms[i]] = [
                                 roomId, "ENUM_ROOMS", null
@@ -1498,9 +1528,9 @@ function initSocketIO(_io) {
                             "EnumInfo": "",
                             "Channels": []
                         };
-                        adapter.log.info("setObject room "+obj.rooms[i]+" created");
+                        adapter.log.info("setObject room " + obj.rooms[i] + " created");
                     }
-                    if (roomId && regaObjects[roomId].Channels.indexOf(id) == -1) {
+                    if (roomId && !regaObjects[roomId].Channels.indexOf(id) == -1) {
                         regaObjects[roomId].Channels.push(id);
                     }
                 }
@@ -1512,7 +1542,7 @@ function initSocketIO(_io) {
                         continue;
                     }
                     var funcId;
-                    if (regaIndex.ENUM_FUNCTIONS.indexOf(obj.funcs[i]) != -1) {
+                    if (regaIndex.ENUM_FUNCTIONS[obj.funcs[i]]) {
                         funcId = obj.funcs[i];
                     } else if (regaIndex.Name[obj.funcs[i]] && regaIndex.Name[obj.funcs[i]][1] == "ENUM_FUNCTIONS") {
                         funcId = regaIndex.Name[obj.funcs[i]][0];
@@ -1544,13 +1574,13 @@ function initSocketIO(_io) {
                         continue;
                     }
                     var favId;
-                    if (regaIndex.FAVORITE.indexOf(obj.favs[i]) != -1) {
+                    if (regaIndex.FAVORITE[obj.favs[i]]) {
                         favId = obj.favs[i];
                     } else if (regaIndex.Name[obj.favs[i]] && regaIndex.Name[obj.favs[i]][1] == "FAVORITE") {
                         favId = regaIndex.Name[obj.favs[i]][0];
                     } else {
                         favId = nextId(66000);
-                        regaIndex.FAVORITE.push(favId);
+                        regaIndex.FAVORITE[obj.favs[i]] = favId;
                         if (!regaIndex.Name[obj.favs[i]]) {
                             regaIndex.Name[obj.favs[i]] = [
                                 favId, "ENUM_FUNCTIONS", null
@@ -1562,7 +1592,7 @@ function initSocketIO(_io) {
                             "EnumInfo": "",
                             "Channels": []
                         };
-                        adapter.log.info("setObject favorite "+obj.favs[i]+" created");
+                        adapter.log.info("setObject favorite " + obj.favs[i] + " created");
                     }
                     if (favId && regaObjects[favId].Channels.indexOf(id) == -1) {
                         regaObjects[favId].Channels.push(id);

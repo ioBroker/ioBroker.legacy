@@ -345,7 +345,7 @@ dui.createDemoView = function () {
                     "min" : 0,
                     "max" : 1,
                     "step" : 0.01,
-                    "src" : "http://www.transferinrome.com/wp-content/uploads/2014/01/miami5.jpg"
+                    "src" : "http://imkbemu.physik.uni-karlsruhe.de/~ws_uni/plots/WEBCAM/chillcam4.jpg"
                 },
                 "style" : {
                     "left" : 7,
