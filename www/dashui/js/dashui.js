@@ -183,8 +183,8 @@ var dui = {
         localData.uiState.bind("_" + dui.instanceCmd + ".Value", function (e, newVal) {
             var cmd = newVal;
              if (cmd !== "" &&
-                 (localData.uiState["_" + dui.instanceId].Value == 'FFFFFFFF' ||
-                  (dui.instance && localData.uiState["_" + dui.instanceId].Value == dui.instance))) {
+                 (localData.uiState["_" + dui.instanceId + '.Value'] == 'FFFFFFFF' ||
+                  (dui.instance && localData.uiState["_" + dui.instanceId + '.Value'] == dui.instance))) {
                 var data = localData.uiState.attr("_" + dui.instanceData + ".Value");
                 // external Commands
                 switch (cmd) {
@@ -1006,7 +1006,8 @@ var localData = {
             localData.metaObjects[id]["TypeName"] == "PROGRAM") {
             dui.conn.execProgramm(id);
         } else {
-            this.setState.attr("_" + id, {Value: val});
+            //this.setState.attr("_" + id + '.Value',  val);
+
             var d = new Date();
             var t = d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2) + " " + ("0" + d.getHours()).slice(-2) + ":" + ("0" + d.getMinutes()).slice(-2) + ":" + ("0" + d.getSeconds()).slice(-2);
             var o = {};
@@ -1019,7 +1020,9 @@ var localData = {
             o["_" + id + ".Timestamp"] = t;
             o["_" + id + ".Certain"] = false;
 
-            if (this.uiState["_" + id]) {
+            localData.stateDelayed(id, val);
+
+            if (this.uiState["_" + id] || this.uiState["_" + id + '.Value'] !== undefined) {
                 this.uiState.attr(o);
 
                 // Inform other widgets, that does not support canJS
@@ -1030,10 +1033,11 @@ var localData = {
         }
     },
     stateDelayed: function (id, val) {
-        var attr = '_' + id;
-        if (!this.setStateTimers[id]) {
+        // Get the ID
+        dui.conn.setPointValue(id, val);
+
+        /*if (!this.setStateTimers[id]) {
             //console.log("setState id="+id+" val="+val);
-            dui.conn.setPointValue(id, val);
 
             this.setState.removeAttr(attr);
             this.setStateTimers[id] = setTimeout(function () {
@@ -1043,7 +1047,7 @@ var localData = {
                 }
                 localData.setStateTimers[id] = undefined;
             }, 1000);
-        }
+        }*/
     }
 };
 
@@ -1091,17 +1095,17 @@ if ('applicationCache' in window) {
 (function ($) {
     $(document).ready(function () {
         // On some platforms, the can.js is not immediately ready
-        localData.uiState  = new can.Map({"_65535": {"Value": null}});
-        localData.setState = new can.Map({"_65535": {"Value": null}});
+        localData.uiState  = new can.Map({"_65535.Value": null});
+        localData.setState = new can.Map({"_65535.Value": null});
 
         // Bind on change of some state
-        localData.setState.bind("change", function (e, attr, how, newVal, oldVal) {
+        /*localData.setState.bind("change", function (e, attr, how, newVal, oldVal) {
             //console.log("localData setState change "+how+" "+attr+" "+JSON.stringify(newVal));
             if (how == "set" || how == "add") {
                 var id = attr.slice(1);//parseInt(attr.slice(1), 10);
                 localData.stateDelayed(id, newVal.Value);
             }
-        });
+        });*/
 
         // für iOS Safari - wirklich notwendig?
         $('body').on('touchmove', function (e) {
@@ -1223,7 +1227,7 @@ if ('applicationCache' in window) {
             onUpdate: function (obj) {
                 var name;
                 // Check new model
-                if (obj != null && obj.name && (name = obj.name.replace(/\./g, '\\.')) && localData.uiState['_' + name] !== undefined) {
+                if (obj != null && obj.name && (name = obj.name.replace(/\./g, '\\.')) && localData.uiState['_' + name + '.Value'] !== undefined) {
                     var o = {};
                     o['_' + name + '.Value']      = obj.val;
                     o['_' + name + '.Timestamp']  = obj.ts;

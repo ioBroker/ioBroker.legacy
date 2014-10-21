@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "legacy",
-        "version":                  "0.1.1",
+        "version":                  "0.1.2",
         "title":                    "Legacy Web Adapter",
         "desc":                     "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
         "platform":                 "Javascript/Node.js",

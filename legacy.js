@@ -144,7 +144,7 @@ function main() {
 
 
 function setState(id, val, ts, ack, callback) {
-    adapter.log.info('setState' + id + ' ' + val + ' ' + ts + ' ' + ack);
+    adapter.log.info('setState ' + id + ' ' + val + ' ' + ts + ' ' + ack);
     adapter.setForeignState(id, {
         val: val,
         ts: ts,
@@ -285,11 +285,18 @@ function obj2rega(obj) {
         var valueUnit;
         var typeName;
         var DPs;
+        var Channels;
 
         switch (obj.type) {
             case 'device':
                 typeName = 'DEVICE';
                 regaIndex.DEVICE.push(idRega);
+                if (obj.children) {
+                    Channels = {};
+                    for (var k = 0; k < obj.children.length; k++) {
+                        Channels[obj.children[k].split('.').pop()] = id2rega(obj.children[k]);
+                    }
+                }
                 break;
             case 'channel':
                 typeName = 'CHANNEL';
@@ -352,6 +359,7 @@ function obj2rega(obj) {
             Parent: id2rega(obj.parent),
             HssType: obj.native && obj.native.TYPE,
             DPs: DPs,
+            Channels: Channels,
 
             // new ioBroker attrs
             _id: obj._id,
@@ -363,7 +371,7 @@ function obj2rega(obj) {
             Address: addr.join('.')
         };
 
-        if (regaObjects[idRega].TypeName == 'DEVICE') {
+        /*if (regaObjects[idRega].TypeName == 'DEVICE') {
             regaObjects[idRega].Channels = {};
             for (var i = 0; i < regaObjects[idRega].children.length; i++) {
                 regaObjects[idRega].Channels[regaObjects[idRega].children[i]] = id2rega(regaObjects[idRega].children[i]);
@@ -374,7 +382,7 @@ function obj2rega(obj) {
             for (var j = 0; j < regaObjects[idRega].children.length; j++) {
                 regaObjects[idRega].DPs[regaObjects[idRega].children[j]] = id2rega(regaObjects[idRega].children[j]);
             }
-        }
+        }*/
 
     }
 }

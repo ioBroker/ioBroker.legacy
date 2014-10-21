@@ -233,7 +233,7 @@ if ((typeof hqWidgets !== 'undefined')) {
                                         if (on_time !== undefined && on_time != null && on_time != "") {
                                             localData.setValue( time_id, parseFloat(on_time));
                                         }
-                                        localData.setValue( hm_id, startValue / 100);
+                                        localData.setValue( hm_id, startValue/* / 100*/);
                                     } else {
                                         obj.SetStates ({percentState: 0, state: hqWidgets.gState.gStateOff, isRefresh: true});
                                         // Send command to HM
@@ -251,7 +251,7 @@ if ((typeof hqWidgets !== 'undefined')) {
                                     }
                                     //console.log ("SetState: "+ hm_id + " = " + (state / 100));
                                     // Send command to HM
-                                    localData.setValue( hm_id, state / 100);
+                                    localData.setValue( hm_id, state/* / 100*/);
                                 }  
                             }                                                
                         }});
@@ -329,10 +329,10 @@ if ((typeof hqWidgets !== 'undefined')) {
 								// Send command to HM
 								var invertState = obj.GetSettings("invertState");
 								if (invertState) {
-									localData.setValue( hm_id, state / 100);
+									localData.setValue( hm_id, state/* / 100*/);
 								} 
 								else {
-									localData.setValue( hm_id, (100 - state) / 100);
+									localData.setValue( hm_id, (100 - state)/* / 100*/);
 								}
                             }                                
                         }});
@@ -956,7 +956,7 @@ if ((typeof hqWidgets !== 'undefined')) {
                             }
                             else
                             if (option == "percentState")
-                                return Math.floor (value * 100);
+                                return Math.floor (value/* * 100*/);
                             else // state
                                 return (value === true || value === "true") ? true : false;
                         }});
@@ -974,9 +974,9 @@ if ((typeof hqWidgets !== 'undefined')) {
 								if (option == "percentState") {
 									var invertState = btn.GetSettings("invertState");
 									if (invertState) {
-										return Math.floor (value * 100);
+										return Math.floor (value/* * 100*/);
 									} else {
-										return Math.floor (100 - (value * 100));
+										return Math.floor (100 - (value/* * 100*/));
 									}
 								}
 								else
@@ -1382,20 +1382,17 @@ if ((typeof hqWidgets !== 'undefined')) {
                         dui.binds.hqWidgetsExt.hqMapping[hm_ids[i].hm_id+'_'+j] = {button: btn, option: hm_ids[i].option, index: hm_ids[i].index};
                         // Set actual state
                         // Convert string to time
-                        if (localData.uiState["_"+hm_ids[i].hm_id] && localData.uiState["_"+hm_ids[i].hm_id].Value !== undefined) {
+                        if (localData.uiState["_"+hm_ids[i].hm_id + '.Value'] !== undefined) {
                             var dt = undefined;
-                            if (localData.uiState["_"+hm_ids[i].hm_id].LastChange !== undefined &&
-							    localData.uiState["_"+hm_ids[i].hm_id].LastChange != null) {
-                                dt = new Date(localData.uiState["_"+hm_ids[i].hm_id].LastChange.replace(' ', 'T') + "Z");//('2011-04-11T11:51:00') "T" Means GMT (We do not have GMT)
+                            if (localData.uiState["_"+hm_ids[i].hm_id + '.LastChange'] !== undefined &&
+							    localData.uiState["_"+hm_ids[i].hm_id + '.LastChange'] != null) {
+                                dt = new Date(localData.uiState["_" + hm_ids[i].hm_id + '.LastChange'].replace(' ', 'T') + "Z");//('2011-04-11T11:51:00') "T" Means GMT (We do not have GMT)
 								dt.setMinutes(dt.getMinutes() + new Date().getTimezoneOffset());
 							}
-                            this.hqMonitor (this, hm_ids[i].hm_id, localData.uiState["_"+hm_ids[i].hm_id].Value, true, dt);
+                            this.hqMonitor (this, hm_ids[i].hm_id, localData.uiState["_"+hm_ids[i].hm_id + '.Value'], true, dt);
                         }
                         else {
-                            if (localData.uiState["_"+hm_ids[i].hm_id])
-                                console.log("DATAPOINT " + hm_ids[i].hm_id + " does not exist in homematic.uiState !!!!!!!!!!!!!!");
-                            else
-                                console.log("DATAPOINT " + hm_ids[i].hm_id + " does not have Value!!!!!!!!!!!!!!");
+                            console.log("DATAPOINT " + hm_ids[i].hm_id + " does not exist in homematic.uiState !!!!!!!!!!!!!!");
                         }
                     }
                 }
@@ -1424,8 +1421,8 @@ if ((typeof hqWidgets !== 'undefined')) {
 						$('#sound__').on('canplaythrough', function() {   
 							this.play ();
 						});
-                        if (localData.uiState["_72901"] && localData.uiState["_72901"].Value) {
-						    document.getElementById('sound__').src = "../" + localData.uiState["_72901"].Value + "?"+d.getTime();
+                        if (localData.uiState["_72901.Value"]) {
+						    document.getElementById('sound__').src = "../" + localData.uiState["_72901.Value"] + "?"+d.getTime();
                         }
                         else{
                             document.getElementById('sound__').src = "../say.mp3?"+d.getTime();

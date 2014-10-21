@@ -10,6 +10,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.2 (2014-10-21)
+* (bluefox) hqWidgets are working
+
 ### 0.1.1 (2014-10-20)
 * (bluefox) select dialog fixed
 * (bluefox) add gruntfile.js
