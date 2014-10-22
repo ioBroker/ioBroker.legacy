@@ -41,14 +41,14 @@
             });
 
             if (localData.uiState[hm_id]) {
-                $this.attr("src", srcArr[localData.uiState[hm_id].Value]);
+                $this.attr("src", srcArr[localData.uiState[hm_id + '.Value']]);
             }
 
             if (refreshInterval > 0) {
                 setInterval(function () {
                     var val;
-                    if (localData.uiState[hm_id]) {
-                        val = localData.uiState[hm_id].Value;
+                    if (localData.uiState[hm_id + '.Value']) {
+                        val = localData.uiState[hm_id + '.Value'];
                     }
                     var src = srcArr[val];
                     $this.attr("src", src+(src.match(/\?/)?"&":"?")+"_dui_refts="+((new Date()).getTime()));
@@ -61,19 +61,19 @@
             var hm_id = "_" + id;
 
             console.log("Image basic"+srcArr);
-            localData.uiState.bind(hm_id+".Value", function (e, newVal, oldVal) {
+            localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                 $this.attr("src", srcArr[newVal]);
             });
 
-            if (localData.uiState[hm_id]) {
-                $this.attr("src", srcArr[localData.uiState[hm_id].Value]);
+            if (localData.uiState[hm_id + '.Value']) {
+                $this.attr("src", srcArr[localData.uiState[hm_id + '.Value']]);
             }
 
             if (refreshInterval > 0) {
                 setInterval(function () {
                     var val;
-                    if (localData.uiState[hm_id]) {
-                        val = localData.uiState[hm_id].Value;
+                    if (localData.uiState[hm_id + '.Value']) {
+                        val = localData.uiState[hm_id + '.Value'];
                     }
                     var src = srcArr[val];
                     $this.attr("src", src + (src.match(/\?/) ? "&" : "?") + "_dui_refts=" + ((new Date()).getTime()));
@@ -138,7 +138,7 @@
                 var hm_id = "_" + $that.attr("data-hm-id");
                 if (!dui.editMode) {
                     var step =  parseFloat($that.attr("data-dashui-step")),
-                        tmp =   parseFloat(localData.uiState[hm_id].Value) + step;
+                        tmp =   parseFloat(localData.uiState[hm_id + '.Value']) + step;
                     if (step < 0) {
                         if (tmp >= minmax) {
                             localData.setValue($that.attr("data-hm-id"), tmp);
@@ -172,7 +172,7 @@
                 var hm_id = "_" + $this.attr("data-hm-id");
                 if (!dui.editMode) {
                     var step = parseFloat($this.attr("data-dashui-step")),
-                            tmp = parseFloat(localData.uiState[hm_id].Value) + step;
+                            tmp = parseFloat(localData.uiState[hm_id + '.Value']) + step;
                     if (step < 0) {
                         if (tmp >= minmax) {
                             localData.setValue($this.attr("data-hm-id"), tmp);
@@ -222,7 +222,7 @@
         hideOnFalse: function (el) {
             var $this = jQuery(el);
             var hm_id = "_" + $this.attr("data-hm-id");
-            localData.uiState.bind(hm_id+".Value", function (e, newVal, oldVal) {
+            localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                 if (newVal === null || newVal === false || newVal === 0 || newVal === "false" || parseInt(newVal,10) == 0) {
                     if (!dui.editMode) {
                         $this.hide();
@@ -232,7 +232,7 @@
                 }
             });
             if (!dui.editMode) {
-                var newVal = localData.uiState.attr(hm_id+".Value");
+                var newVal = localData.uiState.attr(hm_id + ".Value");
                 if (newVal === null || newVal === false || newVal === 0 || newVal === "false" || parseInt(newVal,10) == 0) {
                     $this.hide();
                 }
@@ -241,7 +241,7 @@
         hideOnTrue: function (el) {
             var $this = jQuery(el);
             var hm_id = "_" + $this.attr("data-hm-id");
-            localData.uiState.bind(hm_id+".Value", function (e, newVal, oldVal) {
+            localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                 if (newVal === true || parseFloat(newVal) > 0) {
                     if (!dui.editMode) {
                         $this.hide();
@@ -251,7 +251,7 @@
                 }
             });
             if (!dui.editMode) {
-                if (parseFloat(localData.uiState.attr(hm_id+".Value")) != 0 && localData.uiState.attr(hm_id+".Value") !== false) {
+                if (parseFloat(localData.uiState.attr(hm_id + ".Value")) != 0 && localData.uiState.attr(hm_id + ".Value") !== false) {
                  $this.hide();
                 }
             }
@@ -259,7 +259,7 @@
         showOnValue: function (el, val) {
             var $this = jQuery(el);
             var hm_id = "_" + $this.attr("data-hm-id");
-            localData.uiState.bind(hm_id+".Value", function (e, newVal, oldVal) {
+            localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                 if (newVal != val) {
                     if (!dui.editMode) {
                         $this.hide();
@@ -269,7 +269,7 @@
                 }
             });
             if (!dui.editMode) {
-                if (localData.uiState.attr(hm_id+".Value") != val) {
+                if (localData.uiState.attr(hm_id + ".Value") != val) {
                     $this.hide();
                 }
             }
@@ -278,7 +278,7 @@
             var $this = jQuery(el);
             var hm_id = "_" + $this.attr("data-hm-id");
             var hm_wid = "_" + $this.attr("data-hm-wid");
-            localData.uiState.bind(hm_id+".Value", function (e, newVal, oldVal) {
+            localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                 if (hm_wid && (localData.uiState.attr(hm_wid + '.Value') === true)) return;
                 if (newVal === false || parseFloat(newVal) === 0.0) {
                     $this.removeAttr("checked");
@@ -286,7 +286,7 @@
                     $this.prop("checked", true);
                 }
             });
-            var val = localData.uiState.attr(hm_id+".Value");
+            var val = localData.uiState.attr(hm_id + ".Value");
 
             if (val === 'false') {
                 val = false;
@@ -318,7 +318,7 @@
         select: function (el) {
             var $this = jQuery(el).prev();
             var id = $this.attr("data-hm-id");
-            var val = localData.uiState["_"+id].Value;
+            var val = localData.uiState["_" + id + '.Value'];
             if (val === 'false') {
                 val = false;
             } else if (val === 'true') {
@@ -397,7 +397,7 @@
             var $this = jQuery(el);
             var id = $this.attr("data-hm-id");
             function toggle() {
-                var val = localData.uiState["_"+id].Value;
+                var val = localData.uiState["_" + id + '.Value'];
                 if (val === false || val === "false") {
                     localData.setValue(id, true);
                 } else if (val === true || val === "true") {
@@ -495,7 +495,7 @@
                 $("#"+wid).children().click(function () {
                     var $this = $(this);
                     var id = $this.attr("data-hm-id");
-                    var val = localData.uiState["_"+id].Value;
+                    var val = localData.uiState["_" + id + '.Value'];
                     if (val === false || val === "false") {
                         localData.setValue(id, true);
                     } else if (val === true || val === "true") {

@@ -346,7 +346,14 @@ dui = $.extend(true, dui, {
         }
 
         if (isViewExist) {
-			$("#duiview_"+view).append(can.view(tpl, {hm: localData.uiState["_" + dui.widgets[widgetId].data.hm_id], "data": dui.widgets[widgetId]["data"], "view": view}));
+			$("#duiview_"+view).append(can.view(tpl, {
+                hm:   localData.uiState['_' + dui.widgets[widgetId].data.hm_id + '.Value'],
+                ts:   localData.uiState['_' + dui.widgets[widgetId].data.hm_id + '.TimeStamp'],
+                ack:  localData.uiState['_' + dui.widgets[widgetId].data.hm_id + '.Certain'],
+                lc:   localData.uiState['_' + dui.widgets[widgetId].data.hm_id + '.LastChange'],
+                data: dui.widgets[widgetId]["data"],
+                view: view
+            }));
 		}
 
         if (!dui.views[view].widgets) {
@@ -357,7 +364,7 @@ dui = $.extend(true, dui, {
             dui.views[view].widgets[widgetId] = {};
         }
 		
-        var $jWidget = $('#'+widgetId);
+        var $jWidget = $('#' + widgetId);
 		if (!style) {
 			style = dui.findFreePosition(view, widgetId, null, $jWidget.width(), $jWidget.height());
 		}

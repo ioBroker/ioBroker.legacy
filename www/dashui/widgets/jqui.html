@@ -81,7 +81,7 @@
             },
             active: function (el, reverse, _value) {
                 var $this = jQuery(el);
-                var id = "_" + $this.attr("data-hm-id");
+                var id = '_' + $this.attr("data-hm-id");
                 localData.uiState.bind(id+".Value", function (e, newVal, oldVal) {
                     var val;
                     var value = _value;
@@ -142,7 +142,7 @@
                 }, function () {
                     $this.removeClass("ui-state-hover");
                 });
-                var id = "_" + $this.attr("data-hm-id");
+                var id = '_' + $this.attr("data-hm-id");
                 dui.binds.jqueryui.active(el, reverse, _value);
 
 
@@ -236,7 +236,7 @@
                         });
 
 
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                     if (digits && digits != "") {
                         newVal = parseFloat(newVal).toFixed(digits);
@@ -244,9 +244,9 @@
 
                     $this.val(newVal);
                 });
-                var val = localData.uiState[hm_id].Value;
+                var val = localData.uiState[hm_id + '.Value'];
                 if (digits && digits != "") {
-                    val = parseFloat(localData.uiState[hm_id].Value).toFixed(digits);
+                    val = parseFloat(localData.uiState[hm_id + '.Value']).toFixed(digits);
                 }
                 $this.val(val);
             },
@@ -280,7 +280,7 @@
                 $this.change(function () {
                     localData.setValue(id,  jQuery(this).val());
                 });
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                     $this.val(newVal);
                 });
@@ -339,7 +339,7 @@
                     localData.setValue(id, val);
                     console.log(val);
                 });
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                     $this.val(newVal);
                 });
@@ -366,7 +366,7 @@
                             'outline' : 'none',
                             'cursor' : 'text'
                         });
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                     if (digits && digits != "") {
                         newVal = parseFloat(newVal).toFixed(digits);
@@ -374,7 +374,7 @@
                     jQuery(input).val(newVal);
 
                 });
-                var newVal = localData.uiState[hm_id].Value;
+                var newVal = localData.uiState[hm_id + '.Value'];
                 if (digits && digits != "") {
                     newVal = parseFloat(newVal).toFixed(digits);
                 }
@@ -385,7 +385,7 @@
                 var id = $this.attr("data-hm-id");
 
                 $this.find("option:selected").removeAttr("selected");
-                $this.find("option[value='"+localData.uiState["_"+id].Value+"']").attr("selected", true);
+                $this.find("option[value='" + localData.uiState['_' + id + '.Value'] + "']").attr("selected", true);
 
                 $this.multiselect($.extend({
                     multiple:         false,
@@ -398,10 +398,10 @@
 					}
                 });
 
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
 
                 $this.find("option:selected").removeAttr("selected");
-                $this.find("option[value='" + localData.uiState[hm_id].Value + "']").attr("selected", true);
+                $this.find("option[value='" + localData.uiState[hm_id + '.Value'] + "']").attr("selected", true);
 				$this.prop("disabled", dui.editMode);
                 $this.multiselect("refresh");
 
@@ -422,7 +422,7 @@
                 var $this = jQuery(el);
                 var id = $this.attr("data-hm-id");
                 var wid = $this.attr("data-hm-wid");
-                var hm_id = "_" + id;
+                var hm_id = '_' + id;
 
 
                 var settings = $.extend({
@@ -444,7 +444,7 @@
 
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                    // console.log("slider newVal="+JSON.stringify(newVal));
-                    if (localData.uiState.attr("_"+wid+".Value") != true) {
+                    if (localData.uiState.attr('_'+wid+".Value") != true) {
                         $this.slider("value", parseFloat(newVal));
                     }
                 });
@@ -493,7 +493,7 @@
                 var id = $this.attr("data-hm-id");
 
                 // Observable -> Buttonset
-                var hm_id = "_" + id
+                var hm_id = '_' + id
                 localData.uiState.bind(hm_id + ".Value", function (e, newVal, oldVal) {
                     $this.find("input").removeAttr("checked");
                     if (newVal === true) {
@@ -541,14 +541,14 @@
             hueColormode: function (el, idColormode) {
                 var $hue = jQuery(el).parent().find(".hue-mode-hue");
                 var $ct  = jQuery(el).parent().find(".hue-mode-ct");
-                if (localData.uiState.attr("_"+idColormode+".Value") == "ct") {
+                if (localData.uiState.attr('_'+idColormode+".Value") == "ct") {
                     $hue.hide();
                     $ct.show();
                 } else {
                     $ct.hide();
                     $hue.show();
                 }
-                localData.uiState.bind("_"+idColormode+".Value", function (e, newVal, oldVal) {
+                localData.uiState.bind('_'+idColormode+".Value", function (e, newVal, oldVal) {
                     if (newVal == "ct") {
                         $hue.hide();
                         $ct.show();
@@ -582,7 +582,7 @@
 
             itoggle: function (el){
                 var $this = jQuery(el).parent();
-                var id = "_" + $this.parent().attr("data-hm-id") + ".Value";
+                var id = '_' + $this.parent().attr("data-hm-id") + ".Value";
                 var val = localData.uiState.attr(id);
 
                 if (val === 'false') {
@@ -797,7 +797,7 @@
     <div class="dashui-widget-body">
         <div>
             <%
-            var str = localData.uiState.attr("_" + this.data.hm_id + ".Value");
+            var str = localData.uiState.attr('_' + this.data.hm_id + ".Value");
             var val = parseFloat(str);
             var state;
             if (str === false || str === "false" || val == 0) {

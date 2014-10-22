@@ -1422,10 +1422,10 @@ if ((typeof hqWidgets !== 'undefined')) {
 							this.play ();
 						});
                         if (localData.uiState["_72901.Value"]) {
-						    document.getElementById('sound__').src = "../" + localData.uiState["_72901.Value"] + "?"+d.getTime();
+						    document.getElementById('sound__').src = '../' + localData.uiState["_72901.Value"] + '?' + d.getTime();
                         }
                         else{
-                            document.getElementById('sound__').src = "../say.mp3?"+d.getTime();
+                            document.getElementById('sound__').src = '../say.mp3?' + d.getTime();
                         }
 					}
 					else

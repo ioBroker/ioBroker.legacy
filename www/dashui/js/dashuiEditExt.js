@@ -1799,9 +1799,9 @@ var hmSelect = {
 
             // Update all values
             for (var i = 0; i < this.mydata.length; i++) {
-                var val = localData.uiState['_' + this.mydata[i]['_ID']];
+                var val = localData.uiState['_' + this.mydata[i]['_ID'] + '.Value'];
                 if (val !== undefined) {
-                    this.mydata[i]['Value'] = val.Value;
+                    this.mydata[i]['Value'] = val;
                 } else {
                     this.mydata[i]['Value'] = '';
                 }

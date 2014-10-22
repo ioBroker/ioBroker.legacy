@@ -200,7 +200,7 @@
     <br/>
     <div class="sliderJQUI" style="width:90%" id="<%= this.data.attr('wid') %>_slider" data-hm-id="<%= this.data.attr('hm_id') %>" data-hm-wid="<%= this.data.attr('hm_wid') %>" <%= (el) -> dui.binds.jqueryui.slider(el, {min:0,max:1,step:0.01}) %> />
     <br/>
-    <%= (parseFloat(localData.uiState.attr("_" + this.data.hm_id + ".Value")) * 100).toFixed(0) %>%
+    <%= (parseFloat(localData.uiState.attr("_" + this.data.hm_id + ".Value")) * 1/*00*/).toFixed(0) %>%
     </div>
     <div class="popup-helper" <%= (el) -> dui.binds.jqueryui.dialog(el,{width:440,height:200,modal:data.attr('modal')},true) %> />
     <div class="popup-helper" <%= (el) -> if (data.attr("autoclose") === 'true' || data.attr("modal") === true) { dui.binds.jqueryui.dialogAutoClose(el) } %> />
@@ -335,7 +335,7 @@
     <br/>
     <div class="sliderJQUI" style="width:90%" id="<%= this.data.attr('wid') %>_slider" data-hm-id="<%= this.data.attr('hm_id') %>" data-hm-wid="<%= this.data.attr('hm_wid') %>" <%= (el) -> dui.binds.jqueryui.slider(el, {min:0,max:1,step:0.01}) %> />
     <br/>
-    <%= (localData.uiState.attr("_" + this.data.hm_id + ".Value") * 100).toFixed(0) %>%
+    <%= (localData.uiState.attr("_" + this.data.hm_id + ".Value") * 1/*00*/).toFixed(0) %>%
     </div>
     <div class="popup-helper" <%= (el) -> dui.binds.jqueryui.dialog(el,{width:440,height:200,modal:data.attr('modal')},true) %> />
     <div class="popup-helper" <%= (el) -> if (data.attr("autoclose") === 'true' || data.attr("autoclose") === true) { dui.binds.jqueryui.dialogAutoClose(el) } %> />

@@ -10,6 +10,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.3 (2014-10-22)
+* (bluefox) jqPlot widgets are working and some others
+
 ### 0.1.2 (2014-10-21)
 * (bluefox) hqWidgets are working
 

@@ -574,7 +574,14 @@ var dui = {
         try {
         // Append html element to view
             if (widget.data && widget.data.hm_id) {
-                $("#duiview_" + view).append(can.view(widget.tpl, {hm: localData.uiState['_' + widget.data.hm_id], data: widgetData, view: view}));
+                $("#duiview_" + view).append(can.view(widget.tpl, {
+                    hm:   localData.uiState['_' + widget.data.hm_id + '.Value'],
+                    ts:   localData.uiState['_' + widget.data.hm_id + '.TimeStamp'],
+                    ack:  localData.uiState['_' + widget.data.hm_id + '.Certain'],
+                    lc:   localData.uiState['_' + widget.data.hm_id + '.LastChange'],
+                    data: widgetData,
+                    view: view
+                }));
             }else {
                 $("#duiview_" + view).append(can.view(widget.tpl, {data: widgetData, view: view}));
             }
@@ -837,7 +844,7 @@ var dui = {
         if (localData.metaObjects[id] !== undefined) {
             var parent = "";
             var p = localData.metaObjects[id]["Parent"];
-            console.log('parent metaObject', id, p, localData.metaObjects[p]);
+            //console.log('parent metaObject', id, p, localData.metaObjects[p]);
             if (p !== undefined && localData.metaObjects[p]["DPs"] !== undefined) {
                 parent = localData.metaObjects[p]["Name"] + "/";
             } else if (localData.metaObjects[id]["TypeName"] !== undefined) {
@@ -1961,7 +1968,7 @@ var servConn = {
                         var dp   = obj.id;
 
                         data[dp] = obj;
-                        if (!localData.uiState['_' + dp]) {
+                        if (!localData.uiState['_' + dp + '.Value']) {
                             var o = {};
                             o['_' + dp] = { Value: data[dp].val, Timestamp: data[dp].ts, Certain: data[dp].ack, LastChange: data[dp].lc}
                             localData.uiState.attr(o);
@@ -1993,7 +2000,7 @@ var servConn = {
                 } else if (data !== undefined) {
                     for (var dp in data) {
                         var obj = data[dp];
-                        if (!localData.uiState['_' + dp.replace(/\./g, '\\.')]) {
+                        if (!localData.uiState['_' + dp.replace(/\./g, '\\.') + '.Value']) {
                             var id = dp.replace(/\./g, '\\.');
                             try {
                                 var o = {};
@@ -2034,6 +2041,8 @@ var servConn = {
                     localData.metaObjects = _localData.metaObjects;
                     for (var dp in _localData.uiState) {
                         try {
+                            // TODO possible problem with legacy
+                            console.log(dp);
                             localData.uiState.attr(dp, _localData.uiState[dp]);
                         } catch(e) {
                             servConn.logError('Cannot export ' + dp);

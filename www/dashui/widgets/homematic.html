@@ -52,7 +52,7 @@ dui.binds.homematic = {
             var ALDPs = localData.metaIndex.ALDP;
             for (var i = 0; i < ALDPs.length; i++) {
 
-                if (localData.uiState["_"+ALDPs[i]] && localData.uiState["_"+ALDPs[i]].Value == 1) {
+                if (localData.uiState['_' + ALDPs[i] + '.Value'] == 1) {
                     var metaAlarm = localData.metaObjects[ALDPs[i]];
                     var metaTrigger = localData.metaObjects[metaAlarm.AlTriggerDP];
                     var metaDevice = localData.metaObjects[localData.metaObjects[metaTrigger.Parent].Parent];
@@ -63,14 +63,14 @@ dui.binds.homematic = {
                         msg = localData.homematicStringtable.MAINTENANCE[msg].text;
                     }
 
-                    appendRow($this, ALDPs[i], metaDevice.Name, msg, localData.uiState["_"+ALDPs[i]].Timestamp, metaAlarm.Operations);
+                    appendRow($this, ALDPs[i], metaDevice.Name, msg, localData.uiState['_' + ALDPs[i] + '.Timestamp'], metaAlarm.Operations);
                 }
             }
         }
 
         buildServiceMessageTable();
 
-        localData.uiState.bind("_41.Value", function (e, newVal, oldVal) {
+        localData.uiState.bind('_41.Value', function (e, newVal, oldVal) {
             if (newVal != oldVal) setTimeout(buildServiceMessageTable, 5000);
         });
 
