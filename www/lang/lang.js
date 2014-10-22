@@ -1,1 +1,1 @@
-var ccuIoLang='en';
+var ccuIoLang='en'; // can be 'de' or 'ru'

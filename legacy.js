@@ -137,17 +137,13 @@ function main() {
     }
 
     initWebserver();
-
-
-
 }
-
 
 function setState(id, val, ts, ack, callback) {
     adapter.log.info('setState ' + id + ' ' + val + ' ' + ts + ' ' + ack);
     adapter.setForeignState(id, {
         val: val,
-        ts: ts,
+        ts:  ts,
         ack: ack
     }, function () {
         if (typeof callback === 'function') callback();
@@ -391,10 +387,12 @@ function getData() {
 
     // Create language variable
     datapoints[69999] = ['en', formatTimestamp(), true];
-    regaObjects[69999] = {Name:"SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "DESC", ValueType: 20, ValueSubType: 11};
+    regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "DESC", ValueType: 20, ValueSubType: 11};
     regaIndex.VARDP.push(69999);
 
-
+    idMap[69800] = adapter.namespace + '.instanceId';
+    idMap[69801] = adapter.namespace + '.instanceCmd';
+    idMap[69802] = adapter.namespace + '.instanceData';
 
     adapter.log.info('requesting all objects');
     adapter.objects.getObjectList({include_docs: true}, function (err, res) {
@@ -1656,6 +1654,9 @@ function initSocketIO(_io) {
                 ts =    arr[2],
                 ack =   arr[3];
 
+            if (idMap[id] === undefined) {
+                idMap[id] = adapter.namespace + '.' + id;
+            }
             setState(idMap[id], val, ts, ack, callback);
 
         });
