@@ -29,7 +29,7 @@
                 g_id = g_id || 65535;
                 b_id = b_id || 65535;
 
-                if (!localData.uiState['_' + r_id + '.Value'] || !localData.uiState['_' + g_id + '.Value'] || !localData.uiState['_' + b_id + '.Value']) {
+                if (localData.uiState['_' + r_id + '.Value'] === undefined || localData.uiState['_' + g_id + '.Value'] === undefined || localData.uiState['_' + b_id + '.Value'] === undefined) {
                     return;
                 }
 
@@ -80,7 +80,7 @@
                 g_id = g_id || 65535;
                 b_id = b_id || 65535;
 
-                if (!localData.uiState['_' + r_id + '.Value'] || !localData.uiState['_' + g_id + '.Value'] || !localData.uiState['_' + b_id + '.Value']) {
+                if (localData.uiState['_' + r_id + '.Value'] === undefined || localData.uiState['_' + g_id + '.Value'] === undefined || localData.uiState['_' + b_id + '.Value'] === undefined) {
                     return;
                 }
 

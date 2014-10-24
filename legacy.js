@@ -1,10 +1,10 @@
 
-var fs =   require('fs');
-var express =   require('express');
-var http =      require('http');
-var https =     require('https');
-var socketio =  require('socket.io');
-var crypto =    require('crypto');
+var fs =       require('fs');
+var express =  require('express');
+var http =     require('http');
+var https =    require('https');
+var socketio = require('socket.io');
+var crypto =   require('crypto');
 
 var states = {};
 var objects = {};
@@ -17,9 +17,9 @@ var server;
 var serverSsl;
 var io;
 var ioSsl;
-var webserverUp = false,
-    authHash = "",
-    restApiDelayed = {
+var webserverUp = false;
+var authHash = "";
+var restApiDelayed = {
         timer:        null,
         responseType: '',
         response:     null,
@@ -32,23 +32,23 @@ var datapoints = {};
 var idMap = [];
 var regaObjects = {};
 var regaIndex = {
-    Name: {},
-    Address: {},
-    ENUM_ROOMS: {},
+    Name:           {},
+    Address:        {},
+    ENUM_ROOMS:     {},
     ENUM_FUNCTIONS: {},
-    FAVORITE: [],
-    DEVICE: [],
-    CHANNEL: [],
-    HSSDP: [],
-    VARDP: [],
-    ALDP: [],
-    ALARMDP: [],
-    PROGRAM: {}
+    FAVORITE:       [],
+    DEVICE:         [],
+    CHANNEL:        [],
+    HSSDP:          [],
+    VARDP:          [],
+    ALDP:           [],
+    ALARMDP:        [],
+    PROGRAM:        {}
 };
 
 var adapter = require(__dirname + '/../../lib/adapter.js')({
 
-    name:           'legacy',
+    name: 'legacy',
 
     install: function (callback) {
         if (typeof callback === 'function') callback();
@@ -61,9 +61,10 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
     stateChange: function (id, state) {
         states[id] = state;
-        var regaId = idMap.indexOf(id);
+        var regaId = id;//idMap.indexOf(id);
         datapoints[regaId] = [state.val, state.ts, state.ack, state.lc];
         var arr = [regaId, state.val, state.ts, state.ack, state.lc];
+
         if (io)     io.sockets.emit('event', arr);
         if (ioSsl)  ioSsl.sockets.emit('event', arr);
     },
@@ -92,51 +93,52 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 
 });
 
-
-
 function main() {
-    getData();
-    adapter.subscribeForeignStates('*');
-    adapter.subscribeForeignObjects('*');
+    adapter.getForeignObject('system.config', function (err, config) {
+        getData();
+        adapter.subscribeForeignStates('*');
+        adapter.subscribeForeignObjects('*');
 
-    if (adapter.config.ioListenPort) {
-        app =  express();
+        if (adapter.config.ioListenPort) {
+            app =  express();
 
-        if (adapter.config.authentication && adapter.config.authentication.enabled) {
-            app.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
-        }
-
-        server =    require('http').Server(app)
-    }
-
-// Create md5 hash of user and password
-    if (adapter.config.authentication.user && adapter.config.authentication.password) {
-        // We can add the client IP address, so the key will be different for every client, but the server should calculate hash on the fly
-        authHash = crypto.createHash('md5').update(adapter.config.authentication.user+adapter.config.authentication.password).digest("hex");
-    }
-
-    if (adapter.config.ioListenPortSsl) {
-        var options = null;
-
-        // Zertifikate vorhanden?
-        try {
-            options = {
-                key: fs.readFileSync(__dirname+'/ssl/privatekey.pem'),
-                cert: fs.readFileSync(__dirname+'/ssl/certificate.pem')
-            };
-        } catch(err) {
-            adapter.log.error(err.message);
-        }
-        if (options) {
-            appSsl = express();
-            if (adapter.config.authentication && adapter.config.authentication.enabledSsl) {
-                appSsl.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
+            if (adapter.config.authentication && adapter.config.authentication.enabled) {
+                app.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
             }
-            serverSsl = require('https').createServer(options, appSsl);
-        }
-    }
 
-    initWebserver();
+            server = require('http').Server(app)
+        }
+
+        // Create md5 hash of user and password
+        if (adapter.config.authentication.user && adapter.config.authentication.password) {
+            // We can add the client IP address, so the key will be different for every client, but the server should calculate hash on the fly
+            authHash = crypto.createHash('md5').update(adapter.config.authentication.user+adapter.config.authentication.password).digest("hex");
+        }
+
+        if (adapter.config.ioListenPortSsl) {
+            var options = null;
+
+            // Zertifikate vorhanden?
+            try {
+                options = {
+                    key: fs.readFileSync(__dirname+'/ssl/privatekey.pem'),
+                    cert: fs.readFileSync(__dirname+'/ssl/certificate.pem')
+                };
+            } catch(err) {
+                adapter.log.error(err.message);
+            }
+            if (options) {
+                appSsl = express();
+                if (adapter.config.authentication && adapter.config.authentication.enabledSsl) {
+                    appSsl.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
+                }
+                serverSsl = require('https').createServer(options, appSsl);
+            }
+        }
+
+        initWebserver();
+
+    });
 }
 
 function setState(id, val, ts, ack, callback) {
@@ -150,95 +152,37 @@ function setState(id, val, ts, ack, callback) {
     });
 }
 
-function id2rega(id) {
-
-    var idRega = idMap.indexOf(id);
-
-    if (idRega > 0) {
-        return idRega;
-    } else {
-        return createRegaId(id);
-    }
-}
-
-function createRegaId(id) {
-    var obj = objects[id];
-    if (!obj) return undefined;
-    //if (obj.type !== 'enum' && obj.type !== 'device' && obj.type !== 'channel' && obj.type !== 'state') return false;
-
-    var idRega = parseInt((obj && obj.legacy && obj.legacy.id), 10);
-
-    if (idRega) {
-        if (idMap[idRega] && idMap[idRega] !== obj._id) {
-            idRega = nextId(524288);
-            adapter.log.info('changing ' + obj._id + ' legacy id to ' + idRega);
-            objects[id].legacy = {id: idRega};
-            //adapter.extendForeignObject(obj._id, {legacy: {id: idRega}}, function (err, res) {});
-        } else {
-            adapter.log.debug('got ' + obj._id + ' legacy id  ' + idRega);
-        }
-    } else {
-        idRega = nextId(524288);
-        adapter.log.info('setting ' + obj._id + ' legacy id to ' + idRega);
-        objects[id].legacy = {id: idRega};
-        //adapter.extendForeignObject(obj._id, {legacy: {id: idRega}}, function (err, res) {});
-    }
-    idRega = parseInt(idRega, 10);
-    //console.log('create', id, idRega);
-    if (idRega > 0) {
-        idMap[idRega] = id;
-        return idRega;
-    } else {
-        return undefined;
-    }
-
-}
-
-
-function nextId(id) {
-    while (idMap[id]) {
-        id += 1;
-    }
-    return id;
-}
-
 function obj2rega(obj) {
-    var id = obj._id;
-
     if (!obj) return null;
-    if (id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/)) return null;
 
-
-    // Todo Address
-
-
+    var id = obj._id;
+    if (id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/) || id.match(/^[a-z0-9-_]+\.messagebox/)) return null;
 
     if (id.match(/^enum/)) {
-        var idRega = id2rega(id);
-
         var name = obj.common && obj.common.name;
         if (!name) {
             name = id;
         } else {
-            regaIndex.Name[name] = idRega;
+            regaIndex.Name[name] = id;
         }
 
         if (id.match(/^enum\.rooms\./)) {
-            regaIndex.ENUM_ROOMS[name] = idRega;
-            regaObjects[idRega] = {
-                "Name": name,
+            regaIndex.ENUM_ROOMS[name] = id;
+            regaObjects[id] = {
+                "Name":     name,
                 "TypeName": "ENUM_ROOMS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
                 "Channels": []
             };
+
             if (obj.common && obj.common.members) {
                 for (var i = 0; i < obj.common.members.length; i++) {
-                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                    regaObjects[id].Channels.push(obj.common.members[i]);
                 }
             }
         } else if (id.match(/^enum\.functions\./)) {
-            regaIndex.ENUM_FUNCTIONS[name] = idRega;
-            regaObjects[idRega] = {
+            regaIndex.ENUM_FUNCTIONS[name] = id;
+            regaObjects[id] = {
                 "Name": name,
                 "TypeName": "ENUM_FUNCTIONS",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
@@ -246,12 +190,12 @@ function obj2rega(obj) {
             };
             if (obj.common && obj.common.members) {
                 for (var i = 0; i < obj.common.members.length; i++) {
-                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                    regaObjects[id].Channels.push(obj.common.members[i]);
                 }
             }
         } else if (id.match(/^enum\.favorites\.Admin\./)) {
-            regaIndex.FAVORITE[name] = idRega;
-            regaObjects[idRega] = {
+            regaIndex.FAVORITE[name] = id;
+            regaObjects[id] = {
                 "Name": name,
                 "TypeName": "FAVORITE",
                 "EnumInfo": (obj.common && obj.common.desc) || '',
@@ -259,20 +203,18 @@ function obj2rega(obj) {
             };
             if (obj.common && obj.common.members) {
                 for (var i = 0; i < obj.common.members.length; i++) {
-                    regaObjects[idRega].Channels.push(id2rega(obj.common.members[i]));
+                    regaObjects[id].Channels.push(obj.common.members[i]);
                 }
             }
         }
 
     } else if (obj.type === 'device' || obj.type === 'channel' || obj.type === 'state') {
-        var idRega = id2rega(id);
-
         var name = obj.common && obj.common.name;
         if (!name) {
             name = id;
         } else {
             // FIXME
-            regaIndex.Name[name] = idRega;
+            regaIndex.Name[name] = id;
         }
 
         var valueType;
@@ -286,11 +228,11 @@ function obj2rega(obj) {
         switch (obj.type) {
             case 'device':
                 typeName = 'DEVICE';
-                regaIndex.DEVICE.push(idRega);
+                regaIndex.DEVICE.push(id);
                 if (obj.children) {
                     Channels = {};
                     for (var k = 0; k < obj.children.length; k++) {
-                        Channels[obj.children[k].split('.').pop()] = id2rega(obj.children[k]);
+                        Channels[obj.children[k].split('.').pop()] = obj.children[k];
                     }
                 }
                 break;
@@ -299,21 +241,21 @@ function obj2rega(obj) {
                 if (obj.children) {
                     DPs = {};
                     for (var k = 0; k < obj.children.length; k++) {
-                        DPs[obj.children[k].split('.').pop()] = id2rega(obj.children[k]);
+                        DPs[obj.children[k].split('.').pop()] = obj.children[k];
                     }
                 }
-                regaIndex.CHANNEL.push(idRega);
+                regaIndex.CHANNEL.push(id);
                 break;
             case 'state':
             default:
                 valueUnit = (obj.common && obj.common.unit) || '';
                 if (obj.parent) {
                     typeName = 'HSSDP';
-                    regaIndex.HSSDP.push(idRega);
+                    regaIndex.HSSDP.push(id);
 
                 } else {
                     typeName = 'VARDP';
-                    regaIndex.VARDP.push(idRega);
+                    regaIndex.VARDP.push(id);
 
                 }
 
@@ -343,7 +285,7 @@ function obj2rega(obj) {
         var parts = obj._id.split('.');
         var addr = parts.splice(2);
 
-        regaObjects[idRega] = {
+        regaObjects[id] = {
             // old CCU.IO attrs
             Name: (obj.common && obj.common.name) || id,
             TypeName: typeName,
@@ -352,7 +294,7 @@ function obj2rega(obj) {
             ValueSubType: valueSubType,
             ValueList: valueList,
             ValueUnit: valueUnit,
-            Parent: id2rega(obj.parent),
+            Parent: obj.parent,
             HssType: obj.native && obj.native.TYPE,
             DPs: DPs,
             Channels: Channels,
@@ -366,28 +308,14 @@ function obj2rega(obj) {
             Interface: parts.join('.'),
             Address: addr.join('.')
         };
-
-        /*if (regaObjects[idRega].TypeName == 'DEVICE') {
-            regaObjects[idRega].Channels = {};
-            for (var i = 0; i < regaObjects[idRega].children.length; i++) {
-                regaObjects[idRega].Channels[regaObjects[idRega].children[i]] = id2rega(regaObjects[idRega].children[i]);
-            }
-        } else
-        if (regaObjects[idRega].TypeName == 'CHANNEL') {
-            regaObjects[idRega].DPs = {};
-            for (var j = 0; j < regaObjects[idRega].children.length; j++) {
-                regaObjects[idRega].DPs[regaObjects[idRega].children[j]] = id2rega(regaObjects[idRega].children[j]);
-            }
-        }*/
-
     }
 }
 
 function getData() {
 
     // Create language variable
-    datapoints[69999] = ['en', formatTimestamp(), true];
-    regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "DESC", ValueType: 20, ValueSubType: 11};
+    datapoints[69999]  = ['en', formatTimestamp(), true];
+    regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "System language", ValueType: 20, ValueSubType: 11};
     regaIndex.VARDP.push(69999);
 
     idMap[69800] = adapter.namespace + '.instanceId';
@@ -402,7 +330,7 @@ function getData() {
         //console.log(res.length);
         var l = res.length;
         for (var j = 0; j < l; j++) {
-            var id = res[j].doc._id;
+            var id  = res[j].doc._id;
             var obj = res[j].doc;
             objects[id] = obj;
         }
@@ -417,34 +345,21 @@ function getData() {
             states = res;
 
             for (var state in states) {
-                var idRega = id2rega(state);
-                datapoints[idRega] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
-                if (!idRega) console.log(state, idRega);
-
+                datapoints[state] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
             }
-
-
         });
-
-
     });
-
-
-
-
 }
 
 function uploadParser(req, res, next) {
     var urlParts = url.parse(req.url, true);
     var query = urlParts.query;
 
-    //console.log(query);
-
     // get the temporary location of the file
     var tmpPath = req.files.file.path;
 
-    adapter.log.info("webserver <-- file upload "+req.files.file.name+" ("+req.files.file.size+" bytes) to "+tmpPath);
-    adapter.log.info("webserver <-- file upload query params "+JSON.stringify(query));
+    adapter.log.info("webserver <-- file upload " + req.files.file.name + " (" + req.files.file.size + " bytes) to " + tmpPath);
+    adapter.log.info("webserver <-- file upload query params " + JSON.stringify(query));
 
     var newName;
     if (query.id) {
@@ -454,7 +369,7 @@ function uploadParser(req, res, next) {
     }
     // set where the file should actually exists - in this case it is in the "images" directory
     var targetPath = __dirname + "/" + query.path + newName;
-    adapter.log.info("webserver     move uploaded file "+tmpPath+" -> "+targetPath);
+    adapter.log.info("webserver     move uploaded file " + tmpPath + " -> " + targetPath);
 
 
     // move the file from the temporary location to the intended location
@@ -1653,12 +1568,12 @@ function initSocketIO(_io) {
                 val =   arr[1],
                 ts =    arr[2],
                 ack =   arr[3];
-
-            if (idMap[id] === undefined) {
-                idMap[id] = adapter.namespace + '.' + id;
+            if (objects[id]){
+                setState(id, val, ts, ack, callback);
+            } else {
+                if (idMap[id] === undefined) idMap[id] = adapter.namespace + '.' + id;
+                setState(idMap[id], val, ts, ack, callback);
             }
-            setState(idMap[id], val, ts, ack, callback);
-
         });
 
         socket.on('programExecute', function () {
@@ -1685,7 +1600,6 @@ function initSocketIO(_io) {
 
 }
 
-
 function stop() {
     try {
         if (io && io.server) {
@@ -1707,7 +1621,6 @@ function stop() {
         adapter.log.error("something went wrong while terminating ssl webserver: "+e)
     }
 }
-
 
 function formatTimestamp() {
     var timestamp = new Date();

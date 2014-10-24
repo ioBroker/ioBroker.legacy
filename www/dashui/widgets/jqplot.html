@@ -23,18 +23,15 @@
                             }
                         }, options);
                         var id = "_" + $this.attr("data-hm-id");
-                        var series = [
-                            [localData.uiState[id + '.Value']]
-                        ];
-                        console.log("jqplot");
-                        console.log(series);
+                        var series;
+                        if (localData.uiState[id + '.Value'] !== undefined) {
+                            series = [[localData.uiState[id + '.Value']]];
+                        } else {
+                            series = null;
+                        }
                         var plot = jQuery.jqplot($this.attr("id"), series, jqplotOptions);
                         localData.uiState.bind(id + ".Value", function (e, newVal, oldVal) {
-                            plot.series[0].data = [
-                                [1, newVal]
-                            ];
-                            console.log("jqplot");
-                            console.log(series);
+                            plot.series[0].data = [[1, newVal]];
                             plot.redraw();
                         });
                     } catch(e) {

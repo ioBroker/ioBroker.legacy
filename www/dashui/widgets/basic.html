@@ -40,16 +40,13 @@
                 $this.attr("src", srcArr[newVal]);
             });
 
-            if (localData.uiState[hm_id]) {
+            if (localData.uiState[hm_id + '.Value'] !== undefined) {
                 $this.attr("src", srcArr[localData.uiState[hm_id + '.Value']]);
             }
 
             if (refreshInterval > 0) {
                 setInterval(function () {
-                    var val;
-                    if (localData.uiState[hm_id + '.Value']) {
-                        val = localData.uiState[hm_id + '.Value'];
-                    }
+                    var val = localData.uiState[hm_id + '.Value'] || 0;
                     var src = srcArr[val];
                     $this.attr("src", src+(src.match(/\?/)?"&":"?")+"_dui_refts="+((new Date()).getTime()));
                 }, refreshInterval);
@@ -65,16 +62,13 @@
                 $this.attr("src", srcArr[newVal]);
             });
 
-            if (localData.uiState[hm_id + '.Value']) {
+            if (localData.uiState[hm_id + '.Value'] !== undefined) {
                 $this.attr("src", srcArr[localData.uiState[hm_id + '.Value']]);
             }
 
             if (refreshInterval > 0) {
                 setInterval(function () {
-                    var val;
-                    if (localData.uiState[hm_id + '.Value']) {
-                        val = localData.uiState[hm_id + '.Value'];
-                    }
+                    var val = localData.uiState[hm_id + '.Value'] || 0;
                     var src = srcArr[val];
                     $this.attr("src", src + (src.match(/\?/) ? "&" : "?") + "_dui_refts=" + ((new Date()).getTime()));
                 }, refreshInterval);

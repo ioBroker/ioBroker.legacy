@@ -10,6 +10,10 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.5 (2014-10-24)
+* (bluefox) change nodejs => js-controller
+* (bluefox) use normal names instead of indexes
+
 ### 0.1.4 (2014-10-22)
 * (bluefox) add instanceId and instanceCmd states
 

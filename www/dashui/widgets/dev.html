@@ -22,7 +22,7 @@
             <h3 style="margin-bottom:0px;">localData.uiState = {</h3>
             <table style="white-space: nowrap;">
                 <% localData.uiState.each(function(i, obj) { %>
-                <tr><td>"<%= obj %>":</td><td colspan="2"><%= JSON.stringify(localData.uiState.attr(obj.replace(/\./g, "\\."))) %>,</td></tr>
+                <tr><td>"<%= obj %>":</td><td colspan="2"><%= JSON.stringify(localData.uiState.attr(obj/*.replace(/\./g, "\\.")*/)) %>,</td></tr>
                 <% }) %>
             </table>
             }

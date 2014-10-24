@@ -1257,7 +1257,7 @@ var hmSelect = {
         var dev = id;
         var rooms       = localData.metaIndex["ENUM_ROOMS"]; // IDs of all ROOMS
         
-        while (rooms && result_room == "" && _id !== undefined) {
+        while (rooms && result_room == "" && _id) {
             for (var room in rooms) {
                 for (var k = 0; k < localData.metaObjects[rooms[room]]["Channels"].length; k++) {
                     if (localData.metaObjects[rooms[room]]["Channels"][k] == _id) {
@@ -1269,7 +1269,7 @@ var hmSelect = {
                 } 
             }
             _id = localData.metaObjects[_id]["Parent"];
-            if (_id !== undefined) dev = _id;
+            if (_id) dev = _id;
         }   
         if (result_room == "" && !isNotRecursive && localData.metaObjects[dev]["Channels"]) {
             // Get rooms of all channels of this device
@@ -1291,7 +1291,7 @@ var hmSelect = {
         var dev = id;
         var functions   = localData.metaIndex["ENUM_FUNCTIONS"]; // IDS of all functions
         
-        while (functions && result_func == "" && _id !== undefined) {
+        while (functions && result_func == "" && _id) {
             for (var func in functions) {
                 for (var k = 0; k < localData.metaObjects[functions[func]]["Channels"].length; k++) {
                     if (localData.metaObjects[functions[func]]["Channels"][k] == _id) {
@@ -1304,7 +1304,7 @@ var hmSelect = {
                 } 
             }
             _id = localData.metaObjects[_id]["Parent"];
-            if (_id !== undefined) dev = _id;
+            if (_id) dev = _id;
         }   
         if (result_func == "" && !isNotRecursive && localData.metaObjects[dev]["Channels"]) {
             // Get functions of all channels of this device

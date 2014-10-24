@@ -1044,7 +1044,7 @@ var localData = {
         dui.conn.setPointValue(id, val);
 
         /*if (!this.setStateTimers[id]) {
-            //console.log("setState id="+id+" val="+val);
+            //console.log("setState id=" + id + " val=" + val);
 
             this.setState.removeAttr(attr);
             this.setStateTimers[id] = setTimeout(function () {
@@ -1234,7 +1234,7 @@ if ('applicationCache' in window) {
             onUpdate: function (obj) {
                 var name;
                 // Check new model
-                if (obj != null && obj.name && (name = obj.name.replace(/\./g, '\\.')) && localData.uiState['_' + name + '.Value'] !== undefined) {
+                if (obj != null && obj.name && (name = obj.name/*.replace(/\./g, '\\.')*/) && localData.uiState['_' + name + '.Value'] !== undefined) {
                     var o = {};
                     o['_' + name + '.Value']      = obj.val;
                     o['_' + name + '.Timestamp']  = obj.ts;
@@ -1968,16 +1968,17 @@ var servConn = {
                         var dp   = obj.id;
 
                         data[dp] = obj;
-                        if (!localData.uiState['_' + dp + '.Value']) {
+                        if (localData.uiState['_' + dp + '.Value'] === undefined) {
                             var o = {};
                             o['_' + dp] = { Value: data[dp].val, Timestamp: data[dp].ts, Certain: data[dp].ack, LastChange: data[dp].lc}
                             localData.uiState.attr(o);
                         } else {
                             var o = {};
-                            o['_' + dp.replace(/\./g, '\\.') + '.Value']      = obj.val;
-                            o['_' + dp.replace(/\./g, '\\.') + '.Timestamp']  = obj.ts;
-                            o['_' + dp.replace(/\./g, '\\.') + '.Certain']    = obj.ack;
-                            o['_' + dp.replace(/\./g, '\\.') + '.LastChange'] = obj.lc;
+                            var id = ' ' + dp;//.replace(/\./g, '\\.');
+                            o[id + '.Value']      = obj.val;
+                            o[id + '.Timestamp']  = obj.ts;
+                            o[id + '.Certain']    = obj.ack;
+                            o[id + '.LastChange'] = obj.lc;
                         }
                     }
                 }
@@ -2000,8 +2001,8 @@ var servConn = {
                 } else if (data !== undefined) {
                     for (var dp in data) {
                         var obj = data[dp];
-                        if (!localData.uiState['_' + dp.replace(/\./g, '\\.') + '.Value']) {
-                            var id = dp.replace(/\./g, '\\.');
+                        if (localData.uiState['_' + dp/*.replace(/\./g, '\\.')*/ + '.Value'] === undefined) {
+                            var id = dp;//.replace(/\./g, '\\.');
                             try {
                                 var o = {};
                                 o['_' + dp + '.Value'] = obj[0];
@@ -2012,7 +2013,7 @@ var servConn = {
                             }
                         } else {
                             var o = {};
-                            var id = dp.replace(/\./g, '\\.');
+                            var id = dp;//.replace(/\./g, '\\.');
                                 o['_' + id + '.Value']      = obj[0];
                                 o['_' + id + '.Timestamp']  = obj[1];
                                 o['_' + id + '.Certain']    = obj[2];

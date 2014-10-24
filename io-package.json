@@ -1,9 +1,13 @@
 {
     "common": {
         "name":                     "legacy",
-        "version":                  "0.1.4",
+        "version":                  "0.1.5",
         "title":                    "Legacy Web Adapter",
-        "desc":                     "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
+        "desc":                     {
+            "en": "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
+            "de": "CCU.IO-kompatibel Webserver, kommt mit DashUI, yahui und SlimUI, ermöglicht SimpleAPI",
+            "ru": "CCU.IO-совместимый вебсервер, устанавливается с DashUI, yahui и SlimUI, обеспечивает поддержку SimpleAPI"
+        },
         "platform":                 "Javascript/Node.js",
         "mode":                     "daemon",
         "loglevel":                 "info",
@@ -13,7 +17,8 @@
             "hobbyquaker <hq@ccu.io>"
         ],
         "keywords":                 ["CCU.IO", "DashUI", "yahui", "SlimUI", "SimpleAPI"],
-        "icon":                     "legacy.png"
+        "icon":                     "legacy.png",
+        "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.legacy/master/admin/legacy.png"
     },
     "native": {
         "ioListenPort":             8088,
