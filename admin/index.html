@@ -17,14 +17,27 @@
             "ru": "Legacy adapter settings"
         }
     };
+    function showHideCerts() {
+        if ($('#ioListenPortSsl').val()) {
+            $('#_certPublic').show();
+            $('#_certPrivate').show();
+        } else {
+            $('#_certPublic').hide();
+            $('#_certPrivate').hide();
+        }
+        changed = true;
+        $('#save').button("enable");
+    }
 
     function init() {
-        $('#save').button("disable");
         $('#_password_confirm').val($('#authentication_password').val());
+        $('#ioListenPortSsl').change(showHideCerts).keyup(showHideCerts);
+        showHideCerts();
+        changed = false;
+        $('#save').button("disable");
     }
 
     function setValue(id, value) {
-        // example: select elements with id=key and class=value and insert value
         if ($('#' + id + '.value').attr('type') == 'checkbox') {
             $('#' + id + '.value').prop('checked', value).change(function() {
                 changed = true;
@@ -35,6 +48,21 @@
                 changed = true;
                 $('#save').button("enable");
             }).keyup(function() {
+                // Chack that only numbers entered
+                if ($(this).hasClass('number')) {
+                    var val = $(this).val();
+                    if (val) {
+                        var newVal = '';
+                        for (var i = 0; i < val.length; i++) {
+                            if (val[i] >= '0' && val[i] <= '9') {
+                                newVal += val[i];
+                            }
+                        }
+
+                        if (val != newVal) $(this).val(newVal);
+                    }
+                }
+
                 changed = true;
                 $('#save').button("enable");
             });
@@ -79,6 +107,8 @@
         loadHelper(settings);
 
         init ();
+        fillSelectCertificates('#certPublic',  'public',  settings.certPublic);
+        fillSelectCertificates('#certPrivate', 'private', settings.certPrivate);
     }
     function saveHelper(obj, id, value) {
         var ids = id.split('_');
@@ -119,6 +149,10 @@
             alert(_('Password and confirmation are not equal!'));
             return;
         }
+        if ($('#ioListenPortSsl').val() && (!$('#certPrivate').val() || !$('#certPublic').val())) {
+            alert(_('Set certificates or load it first in the system settings (left top).'));
+            return;
+        }
 
         // example: select elements with class=value and build settings object
         changed = false;
@@ -134,11 +168,11 @@
     <table>
         <tr>
             <td class="translate">Web server port:</td>
-            <td><input type="text" id="ioListenPort" size="5" class="value"/></td>
+            <td><input type="text" id="ioListenPort" size="5" class="value number"/></td>
         </tr>
         <tr>
             <td class="translate">Secure web server port:</td>
-            <td><input type="text" id="ioListenPortSsl" size="5" class="value"/></td>
+            <td><input type="text" id="ioListenPortSsl" size="5" class="value number"/></td>
         </tr>
         <tr>
             <td class="translate">Cache enabled:</td>
@@ -164,6 +198,16 @@
         <tr>
             <td class="translate">Password confirmation:</td>
             <td><input type="password" id="_password_confirm" size="15"/></td>
+        </tr>
+        <tr id="_certPublic">
+            <td class="translate">Public certificate:</td>
+            <td><select id="certPublic" class="value"></select></td>
+            <td></td>
+        </tr>
+        <tr id="_certPrivate">
+            <td class="translate">Private certificate:</td>
+            <td><select id="certPrivate" class="value"></select></td>
+            <td></td>
         </tr>
     </table>
 

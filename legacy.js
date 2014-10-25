@@ -18,7 +18,7 @@ var serverSsl;
 var io;
 var ioSsl;
 var webserverUp = false;
-var authHash = "";
+var authHash =    "";
 var restApiDelayed = {
         timer:        null,
         responseType: '',
@@ -26,11 +26,12 @@ var restApiDelayed = {
         waitId:       0
     };
 
-var socketlist = [];
-
-var datapoints = {};
-var idMap = [];
+var sysConfig =   null;
+var socketlist =  [];
+var datapoints =  {};
+var idMap =       [];
 var regaObjects = {};
+
 var regaIndex = {
     Name:           {},
     Address:        {},
@@ -94,51 +95,59 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
 });
 
 function main() {
-    adapter.getForeignObject('system.config', function (err, config) {
-        getData();
-        adapter.subscribeForeignStates('*');
-        adapter.subscribeForeignObjects('*');
+    getData();
+    adapter.subscribeForeignStates('io.*');
+    adapter.subscribeForeignObjects('*');
 
-        if (adapter.config.ioListenPort) {
-            app =  express();
+    if (adapter.config.ioListenPort) {
+        app = express();
 
-            if (adapter.config.authentication && adapter.config.authentication.enabled) {
-                app.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
-            }
-
-            server = require('http').Server(app)
+        if (adapter.config.authentication && adapter.config.authentication.enabled) {
+            app.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
         }
 
-        // Create md5 hash of user and password
-        if (adapter.config.authentication.user && adapter.config.authentication.password) {
-            // We can add the client IP address, so the key will be different for every client, but the server should calculate hash on the fly
-            authHash = crypto.createHash('md5').update(adapter.config.authentication.user+adapter.config.authentication.password).digest("hex");
-        }
+        server = require('http').Server(app)
+    }
 
-        if (adapter.config.ioListenPortSsl) {
-            var options = null;
+    // Create md5 hash of user and password
+    if (adapter.config.authentication.user && adapter.config.authentication.password) {
+        // We can add the client IP address, so the key will be different for every client, but the server should calculate hash on the fly
+        authHash = crypto.createHash('md5').update(adapter.config.authentication.user+adapter.config.authentication.password).digest("hex");
+    }
 
-            // Zertifikate vorhanden?
-            try {
-                options = {
-                    key: fs.readFileSync(__dirname+'/ssl/privatekey.pem'),
-                    cert: fs.readFileSync(__dirname+'/ssl/certificate.pem')
+    var taskCnt = 0;
+    if (adapter.config.ioListenPortSsl) {
+        taskCnt++;
+        // Load certificates
+        adapter.getForeignObject('system.certificates', function (err, obj) {
+            if (err ||
+                !obj ||
+                !obj.certificates ||
+                !adapter.config.certPublic ||
+                !adapter.config.certPrivate ||
+                !obj.certificates[adapter.config.certPublic] ||
+                !obj.certificates[adapter.config.certPrivate]
+                ) {
+                adapter.log.error('Cannot enable secure Legacy web server, because no certificates found: ' + adapter.config.certPublic + ', ' + adapter.config.certPrivate);
+            } else {
+                var options = {
+                    key: obj.certificates[adapter.config.certPrivate],
+                    cert: obj.certificates[adapter.config.certPublic]
                 };
-            } catch(err) {
-                adapter.log.error(err.message);
-            }
-            if (options) {
-                appSsl = express();
-                if (adapter.config.authentication && adapter.config.authentication.enabledSsl) {
-                    appSsl.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
+
+                if (options) {
+                    appSsl = express();
+                    if (adapter.config.authentication && adapter.config.authentication.enabledSsl) {
+                        appSsl.use(express.basicAuth(adapter.config.authentication.user, adapter.config.authentication.password));
+                    }
+                    serverSsl = require('https').createServer(options, appSsl);
                 }
-                serverSsl = require('https').createServer(options, appSsl);
             }
-        }
-
-        initWebserver();
-
-    });
+            taskCnt--;
+            if (!taskCnt) initWebserver();
+        });
+    }
+    if (!taskCnt) initWebserver();
 }
 
 function setState(id, val, ts, ack, callback) {
@@ -312,41 +321,43 @@ function obj2rega(obj) {
 }
 
 function getData() {
+    adapter.objects.getObject('system.config', function (err, config) {
+        sysConfig = config;
 
-    // Create language variable
-    datapoints[69999]  = ['en', formatTimestamp(), true];
-    regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "System language", ValueType: 20, ValueSubType: 11};
-    regaIndex.VARDP.push(69999);
+        // Create language variable
+        datapoints[69999]  = [config.common.language, formatTimestamp(), true];
+        regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "System language", ValueType: 20, ValueSubType: 11};
+        regaIndex.VARDP.push(69999);
 
-    idMap[69800] = adapter.namespace + '.instanceId';
-    idMap[69801] = adapter.namespace + '.instanceCmd';
-    idMap[69802] = adapter.namespace + '.instanceData';
+        idMap[69800] = 'io.' + adapter.namespace + '.instanceId';
+        idMap[69801] = 'io.' + adapter.namespace + '.instanceCmd';
+        idMap[69802] = 'io.' + adapter.namespace + '.instanceData';
 
-    adapter.log.info('requesting all objects');
-    adapter.objects.getObjectList({include_docs: true}, function (err, res) {
-        adapter.log.info('received all objects');
-        res = res.rows;
-        objects = {};
-        //console.log(res.length);
-        var l = res.length;
-        for (var j = 0; j < l; j++) {
-            var id  = res[j].doc._id;
-            var obj = res[j].doc;
-            objects[id] = obj;
-        }
-        adapter.log.info('creating ccu.io objects');
-        for (var id in objects) {
-            obj2rega(objects[id]);
-        }
-
-        adapter.log.info('requesting all states');
-        adapter.getForeignStates('*', function (err, res) {
-            adapter.log.info('received states');
-            states = res;
-
-            for (var state in states) {
-                datapoints[state] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
+        adapter.objects.getObjectList({include_docs: true}, function (err, res) {
+            adapter.log.info('received all objects');
+            res = res.rows;
+            objects = {};
+            //console.log(res.length);
+            var l = res.length;
+            for (var j = 0; j < l; j++) {
+                var id  = res[j].doc._id;
+                var obj = res[j].doc;
+                objects[id] = obj;
             }
+            adapter.log.info('creating ccu.io objects');
+            for (var id in objects) {
+                obj2rega(objects[id]);
+            }
+
+            adapter.log.info('requesting all states');
+            adapter.getForeignStates('io.*', function (err, res) {
+                adapter.log.info('received states');
+                states = res;
+
+                for (var state in states) {
+                    datapoints[state] = [states[state].val, formatTimestamp(states[state].ts), states[state].ack, formatTimestamp(states[state].lc)];
+                }
+            });
         });
     });
 }

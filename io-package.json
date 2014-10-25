@@ -29,6 +29,8 @@
             "user":                 "admin",
             "password":             "iobroker"
         },
+        "certPublic":               "",
+        "certPrivate":              "",
         "useCache":                 false
     },
     "objects": [
