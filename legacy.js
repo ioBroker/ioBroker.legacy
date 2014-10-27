@@ -122,17 +122,17 @@ function main() {
         adapter.getForeignObject('system.certificates', function (err, obj) {
             if (err ||
                 !obj ||
-                !obj.certificates ||
+                !obj.native.certificates ||
                 !adapter.config.certPublic ||
                 !adapter.config.certPrivate ||
-                !obj.certificates[adapter.config.certPublic] ||
-                !obj.certificates[adapter.config.certPrivate]
+                !obj.native.certificates[adapter.config.certPublic] ||
+                !obj.native.certificates[adapter.config.certPrivate]
                 ) {
                 adapter.log.error('Cannot enable secure Legacy web server, because no certificates found: ' + adapter.config.certPublic + ', ' + adapter.config.certPrivate);
             } else {
                 var options = {
-                    key: obj.certificates[adapter.config.certPrivate],
-                    cert: obj.certificates[adapter.config.certPublic]
+                    key: obj.native.certificates[adapter.config.certPrivate],
+                    cert: obj.native.certificates[adapter.config.certPublic]
                 };
 
                 if (options) {
@@ -325,7 +325,7 @@ function getData() {
         sysConfig = config;
 
         // Create language variable
-        datapoints[69999]  = [config.common.language, formatTimestamp(), true];
+        datapoints[69999]  = [sysConfig.common.language, formatTimestamp(), true];
         regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "System language", ValueType: 20, ValueSubType: 11};
         regaIndex.VARDP.push(69999);
 
@@ -692,14 +692,14 @@ function initWebserver() {
         app.get('/auth/*', function (req, res) {
             res.set('Content-Type', 'text/javascript');
             if (adapter.config.authentication.enabled) {
-                res.send("var socketSession='"+ authHash+"';");
+                res.send("var socketSession='" + authHash + "';");
             } else {
                 res.send("var socketSession='nokey';");
             }
         });
         app.get('/lang/*', function (req, res) {
             res.set('Content-Type', 'text/javascript');
-            res.send("var ccuIoLang='"+ (adapter.config.language || 'en') +"';");
+            res.send("var ccuIoLang='"+ (adapter.config.language || sysConfig.common.language || 'en') +"';");
         });
     }
 
@@ -715,7 +715,7 @@ function initWebserver() {
         }
 
         // File Uploads
-        appSsl.use(express.bodyParser({uploadDir:__dirname+'/tmp'}));
+        appSsl.use(express.bodyParser({uploadDir: __dirname + '/tmp'}));
         appSsl.post('/upload', uploadParser);
 
         appSsl.get('/api/*', restApi);
@@ -723,14 +723,14 @@ function initWebserver() {
         appSsl.get('/auth/*', function (req, res) {
             res.set('Content-Type', 'text/javascript');
             if (adapter.config.authentication.enabledSsl) {
-                res.send("var socketSession='"+ authHash+"';");
+                res.send('var socketSession="' + authHash + '";');
             } else {
-                res.send("var socketSession='nokey';");
+                res.send('var socketSession="nokey";');
             }
         });
         appSsl.get('/lang/*', function (req, res) {
             res.set('Content-Type', 'text/javascript');
-            res.send("var ccuIoLang='"+ (adapter.config.language || 'en') +"';");
+            res.send('var ccuIoLang="' + (adapter.config.language || sysConfig.common.language || 'en') + '";');
         });
     }
 
@@ -742,7 +742,12 @@ function initWebserver() {
         server.listen(adapter.config.ioListenPort);
         adapter.log.info("webserver     listening on port "+adapter.config.ioListenPort);
         io = socketio.listen(server);
-        io.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        io.set('logger', {
+            debug: function (obj) {adapter.log.debug("socket.io: "+obj)},
+            info:  function (obj) {adapter.log.info("socket.io: " + obj)},
+            error: function (obj) {adapter.log.error("socket.io: " + obj)},
+            warn:  function (obj) {adapter.log.warn("socket.io: " + obj)}
+        });
         initSocketIO(io);
     }
 
@@ -750,14 +755,16 @@ function initWebserver() {
         serverSsl.listen(adapter.config.ioListenPortSsl);
         adapter.log.info("webserver ssl listening on port "+adapter.config.ioListenPortSsl);
         ioSsl = socketio.listen(serverSsl);
-        ioSsl.set('logger', { debug: function(obj) {adapter.log.debug("socket.io: "+obj)}, info: function(obj) {adapter.log.info("socket.io: "+obj)} , error: function(obj) {adapter.log.error("socket.io: "+obj)}, warn: function(obj) {adapter.log.warn("socket.io: "+obj)} });
+        ioSsl.set('logger', {
+            debug: function (obj) {adapter.log.debug("socket.io: " + obj)},
+            info:  function (obj) {adapter.log.info("socket.io: " + obj)},
+            error: function (obj) {adapter.log.error("socket.io: " + obj)},
+            warn:  function (obj) {adapter.log.warn("socket.io: " + obj)}
+        });
         initSocketIO(ioSsl);
 
     }
     webserverUp = true;
-
-
-
 }
 
 function initSocketIO(_io) {
