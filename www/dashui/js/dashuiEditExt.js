@@ -838,6 +838,7 @@ var hmSelect = {
     
 	_convertName: function (text) {
 		var oldText = text;
+        if (!text) return text;
 		do
 		{
 			oldText = text;
@@ -1193,9 +1194,9 @@ var hmSelect = {
 			colNames:['Id', dui.translate('Name'), '', dui.translate('Description'), ''],
 			colModel:[
                 {name:'id',          index:'id',          width:1,   hidden:true, key:true},
-				{name:'Name',        index:'Name',        width:250, sortable:"text"},
+				{name:'Name',        index:'Name',        width:400, sortable:"text"},
                 {name:'data',        index:'data',        width:1,   hidden:true},
-				{name:'Description', index:'Description', width:570, sorttype:"text"},
+				{name:'Description', index:'Description', width:420, sorttype:"text"},
 				{name:'_ID',         index:'_ID',         width:0,   hidden:true}
 			],
 			onSelectRow: function (id) {

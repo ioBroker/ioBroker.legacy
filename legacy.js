@@ -165,7 +165,7 @@ function obj2rega(obj) {
     if (!obj) return null;
 
     var id = obj._id;
-    if (id.match(/^history/) || id.match(/^[a-z0-9-_]+\.meta/) || id.match(/^[a-z0-9-_]+\.messagebox/)) return null;
+    if (id.match(/^history/) || id.match(/^[a-z\.0-9-_]+\.meta/) || id.match(/^[a-z\.0-9-_]+\.messagebox/)) return null;
 
     if (id.match(/^enum/)) {
         var name = obj.common && obj.common.name;
@@ -233,6 +233,8 @@ function obj2rega(obj) {
         var typeName;
         var DPs;
         var Channels;
+        var desc = '';
+        var isSystemParent = obj.parent ? obj.parent.match(/^system\./) : false;
 
         switch (obj.type) {
             case 'device':
@@ -258,7 +260,7 @@ function obj2rega(obj) {
             case 'state':
             default:
                 valueUnit = (obj.common && obj.common.unit) || '';
-                if (obj.parent) {
+                if (obj.parent && !isSystemParent) {
                     typeName = 'HSSDP';
                     regaIndex.HSSDP.push(id);
 
@@ -267,24 +269,29 @@ function obj2rega(obj) {
                     regaIndex.VARDP.push(id);
 
                 }
-
         }
 
         switch (obj.common.type) {
             case 'boolean':
                 valueType = 2;
+                valueSubType = 0;
                 break;
             case 'string':
                 valueType = 20;
+                valueSubType = 11;
                 break;
             case 'number':
                 if (obj.common.states) {
+                    valueType = 16;
+                    valueSubType = 29;
                     var tmp = [];
                     for (var i = obj.common.min; i <= obj.common.max; i++) {
                         tmp.push(obj.common.states[i]);
                     }
                     valueList = tmp.join(';');
                 } else {
+                    valueType = 4;
+                    valueSubType = 0;
                     valueList = undefined;
                 }
                 break;
@@ -292,18 +299,33 @@ function obj2rega(obj) {
 
         }
         var parts = obj._id.split('.');
-        var addr = parts.splice(2);
+        var addr = parts.splice(3);
+
+        if (id.match(/^[a-z\.0-9-_]+\.ProgramExecute/)) {
+            isSystemParent = true;
+            regaIndex['PROGRAM'][id] = id;
+            typeName = 'VARDP';
+            desc = regaObjects[obj.parent] ? regaObjects[obj.parent].native.PrgInfo : '';
+        } else
+        if (id.match(/^[a-z\.0-9-_]+\.Active/)) {
+            isSystemParent = true;
+            regaIndex['PROGRAM'][id] = id;
+            typeName = 'VARDP';
+            desc = regaObjects[obj.parent] ? regaObjects[obj.parent].native.PrgInfo : '';
+        }
+
 
         regaObjects[id] = {
             // old CCU.IO attrs
             Name: (obj.common && obj.common.name) || id,
+            Description: desc,
             TypeName: typeName,
             DPInfo: (obj.common && obj.common.desc) || '',
             ValueType: valueType,
             ValueSubType: valueSubType,
             ValueList: valueList,
             ValueUnit: valueUnit,
-            Parent: obj.parent,
+            Parent: isSystemParent ? null : obj.parent,
             HssType: obj.native && obj.native.TYPE,
             DPs: DPs,
             Channels: Channels,
@@ -313,7 +335,7 @@ function obj2rega(obj) {
             common: obj.common,
             native: obj.native,
             children: obj.children,
-            parent: obj.parent,
+            parent: isSystemParent ? null : obj.parent,
             Interface: parts.join('.'),
             Address: addr.join('.')
         };

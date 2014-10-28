@@ -10,6 +10,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.6 (2014-10-28)
+* (bluefox) fix programs dialog
+
 ### 0.1.5 (2014-10-24)
 * (bluefox) change nodejs => js-controller
 * (bluefox) use normal names instead of indexes
