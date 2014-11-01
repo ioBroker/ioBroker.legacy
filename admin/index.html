@@ -156,7 +156,16 @@
 
         // example: select elements with class=value and build settings object
         changed = false;
-        callback(getSettings());
+        var obj = getSettings();
+        var link = obj.ioListenPort;
+        if (link) {
+            link = 'http://%ip%:' + link;
+        } else {
+            link = obj.ioListenPortSsl;
+            if (link) link = 'https://%ip%:' + link;
+        }
+
+        callback(obj, {localLink: link});
         $('#save').button("disable");
     }
 
