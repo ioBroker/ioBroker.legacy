@@ -18,7 +18,8 @@ var serverSsl;
 var io;
 var ioSsl;
 var webserverUp = false;
-var authHash =    "";
+var authHash =    '';
+var sysLanguage = 'en';
 var restApiDelayed = {
         timer:        null,
         responseType: '',
@@ -89,10 +90,40 @@ var adapter = require(__dirname + '/../../lib/adapter.js')({
     },
 
     ready: function () {
-        main();
+        adapter.getForeignObject('system.config', function (err, obj) {
+            if (!err && obj) sysLanguage = obj.common.language || sysLanguage;
+            main();
+        });
     }
 
 });
+
+var _ = function translate(text, arg) {
+    var lang = sysLanguage || 'en';
+    if (!this.words) {
+        this.words = {
+            'execute': {'en': 'execute', 'de': 'ausführen', 'ru': 'выполнить'},
+            'enabled': {'en': 'enabled', 'de': 'aktiviert', 'ru': 'активно'}
+        };
+    }
+
+    if (this.words[text]) {
+        var newText = this.words[text][lang];
+        if (newText) {
+            text = newText;
+        } else {
+            newText = this.words[text]["en"];
+            if (newText) {
+                text = newText;
+            }
+        }
+    }
+
+    if (arg !== undefined) {
+        text = text.replace('%s', arg);
+    }
+    return text;
+}
 
 function main() {
     getData();
@@ -304,14 +335,16 @@ function obj2rega(obj) {
         if (id.match(/^[a-z\.0-9-_]+\.ProgramExecute/)) {
             isSystemParent = true;
             regaIndex['PROGRAM'][id] = id;
-            typeName = 'VARDP';
+            typeName = 'PROGRAM';
             desc = regaObjects[obj.parent] ? regaObjects[obj.parent].native.PrgInfo : '';
+            if (obj.common && obj.common.name) obj.common.name = obj.common.name.replace(/execute$/, _('execute'));
         } else
         if (id.match(/^[a-z\.0-9-_]+\.Active/)) {
             isSystemParent = true;
-            regaIndex['PROGRAM'][id] = id;
             typeName = 'VARDP';
+            regaIndex['PROGRAM'][id] = id;
             desc = regaObjects[obj.parent] ? regaObjects[obj.parent].native.PrgInfo : '';
+            if (obj.common && obj.common.name) obj.common.name = obj.common.name.replace(/enabled$/, _('enabled'));
         }
 
 
@@ -325,7 +358,7 @@ function obj2rega(obj) {
             ValueSubType: valueSubType,
             ValueList: valueList,
             ValueUnit: valueUnit,
-            Parent: isSystemParent ? null : obj.parent,
+            Parent: isSystemParent ? undefined : obj.parent,
             HssType: obj.native && obj.native.TYPE,
             DPs: DPs,
             Channels: Channels,
@@ -1616,8 +1649,14 @@ function initSocketIO(_io) {
             }
         });
 
-        socket.on('programExecute', function () {
-            // todo
+        socket.on('programExecute', function (arr, callback) {
+            var id =    arr[0];
+            if (objects[id]){
+                setState(id, true, undefined, undefined, callback);
+            } else {
+                if (idMap[id] === undefined) idMap[id] = adapter.namespace + '.' + id;
+                setState(idMap[id], true, undefined, undefined, callback);
+            }
         });
 
         socket.on('runScript', function(script, callback) {

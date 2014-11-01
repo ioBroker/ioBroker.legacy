@@ -1467,7 +1467,7 @@ var hmSelect = {
                         isFound = true;
                     } else {
                         for (var t = 0; t < f.length; t++) {
-                            if (device.HssType.indexOf(f[t]) != -1) {
+                            if (device.HssType && device.HssType.indexOf(f[t]) != -1) {
                                 isFound = true;
                                 break;
                             }

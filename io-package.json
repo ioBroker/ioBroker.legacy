@@ -1,7 +1,7 @@
 {
     "common": {
         "name":                     "legacy",
-        "version":                  "0.1.6",
+        "version":                  "0.1.7",
         "title":                    "Legacy Web Adapter",
         "desc":                     {
             "en": "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
@@ -19,7 +19,7 @@
         "keywords":                 ["CCU.IO", "DashUI", "yahui", "SlimUI", "SimpleAPI"],
         "icon":                     "legacy.png",
         "extIcon":                  "https://raw.githubusercontent.com/ioBroker/ioBroker.legacy/master/admin/legacy.png",
-        "localLink":                "http://localhost:8088",
+        "localLink":                "http://%ip%:8088",
         "enabled":                  true
     },
     "native": {

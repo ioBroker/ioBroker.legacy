@@ -10,6 +10,10 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.7 (2014-11-01)
+* (bluefox) add link to local web service in admin
+* (bluefox) fix select dialog for program
+
 ### 0.1.6 (2014-10-28)
 * (bluefox) fix programs dialog
 
