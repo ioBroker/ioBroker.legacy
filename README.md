@@ -1,5 +1,6 @@
-ioBroker.legacy
-===============
+![Logo](admin/legacy.png)
+ioBroker legacy Adapter
+==============
 
 CCU.IO compatible Webserver
 
@@ -10,6 +11,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.8 (2014-11-02)
+* (bluefox) support of read binary states under http://ip:port/state/stateName
+
 ### 0.1.7 (2014-11-01)
 * (bluefox) add link to local web service in admin
 * (bluefox) fix select dialog for program

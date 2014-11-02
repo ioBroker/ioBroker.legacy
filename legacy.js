@@ -756,6 +756,21 @@ function initWebserver() {
             res.set('Content-Type', 'text/javascript');
             res.send("var ccuIoLang='"+ (adapter.config.language || sysConfig.common.language || 'en') +"';");
         });
+        app.get('/state/*', function (req, res) {
+            try {
+                var fileName = req.url.split('/', 3)[2].split('?', 2);
+                adapter.getBinaryState(fileName[0], function (err, obj) {
+                    if (!err && obj) {
+                        res.set('Content-Type', 'text/plain');
+                        res.send(obj);
+                    } else {
+                        res.status(404).send('404 Not found. File ' + fileName[0] + ' not found');
+                    }
+                });
+            } catch(e) {
+                res.status(500).send('500. Error' + e);
+            }
+        });
     }
 
     if (appSsl) {
@@ -786,6 +801,22 @@ function initWebserver() {
         appSsl.get('/lang/*', function (req, res) {
             res.set('Content-Type', 'text/javascript');
             res.send('var ccuIoLang="' + (adapter.config.language || sysConfig.common.language || 'en') + '";');
+        });
+
+        appSsl.get('/state/*', function (req, res) {
+            try {
+                var fileName = req.url.split('/', 3)[2].split('?', 2);
+                adapter.getBinaryState(fileName[0], function (err, obj) {
+                    if (!err && obj) {
+                        res.set('Content-Type', 'text/plain');
+                        res.send(obj);
+                    } else {
+                        res.status(404).send('404 Not found. File ' + fileName[0] + ' not found');
+                    }
+                });
+            } catch(e) {
+                res.status(500).send('500. Error' + e);
+            }
         });
     }
 
