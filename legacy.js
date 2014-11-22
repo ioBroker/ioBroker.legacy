@@ -127,7 +127,7 @@ var _ = function translate(text, arg) {
 
 function main() {
     getData();
-    adapter.subscribeForeignStates('io.*');
+    adapter.subscribeForeignStates('*');
     adapter.subscribeForeignObjects('*');
 
     if (adapter.config.ioListenPort) {
@@ -384,9 +384,9 @@ function getData() {
         regaObjects[69999] = {Name: "SYSTEM.LANGUAGE", TypeName: "VARDP", DPInfo: "System language", ValueType: 20, ValueSubType: 11};
         regaIndex.VARDP.push(69999);
 
-        idMap[69800] = 'io.' + adapter.namespace + '.instanceId';
-        idMap[69801] = 'io.' + adapter.namespace + '.instanceCmd';
-        idMap[69802] = 'io.' + adapter.namespace + '.instanceData';
+        idMap[69800] = adapter.namespace + '.instanceId';
+        idMap[69801] = adapter.namespace + '.instanceCmd';
+        idMap[69802] = adapter.namespace + '.instanceData';
 
         adapter.objects.getObjectList({include_docs: true}, function (err, res) {
             adapter.log.info('received all objects');
@@ -405,7 +405,7 @@ function getData() {
             }
 
             adapter.log.info('requesting all states');
-            adapter.getForeignStates('io.*', function (err, res) {
+            adapter.getForeignStates('*', function (err, res) {
                 adapter.log.info('received states');
                 states = res;
 

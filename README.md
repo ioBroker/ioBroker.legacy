@@ -11,6 +11,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.9 (2014-11-22)
+* (bluefox) support of new naming concept.
+
 ### 0.1.8 (2014-11-02)
 * (bluefox) support of read binary states under http://ip:port/state/stateName
 
