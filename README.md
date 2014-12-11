@@ -11,6 +11,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.10 (2014-12-11)
+* (bluefox) support of new naming concept.
+
 ### 0.1.9 (2014-11-22)
 * (bluefox) support of new naming concept.
 

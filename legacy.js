@@ -367,7 +367,7 @@ function obj2rega(obj) {
             _id: obj._id,
             common: obj.common,
             native: obj.native,
-            children: obj.children,
+            //children: obj.children,
             parent: isSystemParent ? null : obj.parent,
             Interface: parts.join('.'),
             Address: addr.join('.')
@@ -398,6 +398,14 @@ function getData() {
                 var id  = res[j].doc._id;
                 var obj = res[j].doc;
                 objects[id] = obj;
+                // Find for every object the children
+                var reg = new RegExp('^' + id + '.');
+                for (var k = 0; k < l; k++) {
+                    if (reg.test(res[k].doc._id)) {
+                        objects[id].children = objects[id].children || [];
+                        objects[id].children.push(res[k].doc._id);
+                    }
+                }
             }
             adapter.log.info('creating ccu.io objects');
             for (var id in objects) {
