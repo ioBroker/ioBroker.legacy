@@ -11,6 +11,9 @@ CCU.IO compatible Webserver
 
 
 ## Changelog
+### 0.1.11 (2015-01-03)
+* (bluefox) enable npm instal
+
 ### 0.1.10 (2014-12-11)
 * (bluefox) support of new naming concept.
 

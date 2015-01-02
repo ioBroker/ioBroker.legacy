@@ -1,4 +1,8 @@
 
+/* jshint -W097 */// jshint strict:false
+/*jslint node: true */
+"use strict";
+var utils =    require(__dirname + '/lib/utils'); // Get common adapter utils
 var fs =       require('fs');
 var express =  require('express');
 var http =     require('http');
@@ -48,7 +52,7 @@ var regaIndex = {
     PROGRAM:        {}
 };
 
-var adapter = require(__dirname + '/../../lib/adapter.js')({
+var adapter = utils.adapter.js({
 
     name: 'legacy',
 
@@ -480,7 +484,7 @@ function findDatapoint(needle, hssdp) {
             }
         } else if (needle.match(/[a-zA-Z-]+\.[0-9A-Za-z-]+:[0-9]+\.[A-Z_]+/)) {
             // Get by full BidCos-Address
-            addrArr = needle.split(".");
+            var addrArr = needle.split('.');
             if (regaIndex.Address[addrArr[1]]) {
                 needle = regaObjects[regaIndex.Address[addrArr[1]]].DPs[addArr[2]];
             }
