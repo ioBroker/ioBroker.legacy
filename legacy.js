@@ -52,7 +52,7 @@ var regaIndex = {
     PROGRAM:        {}
 };
 
-var adapter = utils.adapter.js({
+var adapter = utils.adapter({
 
     name: 'legacy',
 
