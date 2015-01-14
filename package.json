@@ -1,6 +1,6 @@
 {
   "name": "iobroker.legacy",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "description": "CCU.IO-compatible webserver, ships with DashUI, yahui and SlimUI, provides SimpleAPI",
   "author": "hobbyquaker <hq@ccu.io>",
   "contributors": [
